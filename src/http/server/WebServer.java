@@ -59,12 +59,17 @@ public class WebServer {
         }
     }
 
+    /**
+     * Handles the client actions once there is a client connected
+     * @param client
+     * @throws IOException
+     */
     private void handleClient(Socket client) throws IOException {
-        System.out.println("Debug: got new client " + client.toString());
         //opening IO streams to communicate with client
         BufferedReader in = new BufferedReader(new InputStreamReader(
                 client.getInputStream()));
 
+        //Parsing request data
         StringBuilder requestBuilder = new StringBuilder();
         String line;
         while (!(line = in.readLine()).isBlank()) {
@@ -89,6 +94,11 @@ public class WebServer {
                 client, method, resource, version, host, headers);
         System.out.println(accessLog);
 
+        /**
+         * If resource is empty, redirect to index file
+         * If it's withing the authorized directory, call the httpGet methode
+         * Otherwise, access is forbidden for security purposes
+         */
         if (resource.isEmpty()) {
             httpGET(client, INDEX_FILENAME);
         } else if (resource.startsWith(RESOURCE_DIRECTORY)) {
@@ -105,6 +115,13 @@ public class WebServer {
         }
     }
 
+    /**
+     * Given a client and a filename to access, returns to the client the content of the file if it exists
+     * or 404 otherwise.
+     * @param client
+     * @param filename
+     * @throws IOException
+     */
     private void httpGET(Socket client, String filename) throws IOException {
         File resource = new File(filename);
         if (resource.exists() && resource.isFile()) {
@@ -118,6 +135,14 @@ public class WebServer {
         }
     }
 
+    /**
+     * Sends the response to the client.
+     * @param client
+     * @param status
+     * @param contentType
+     * @param content
+     * @throws IOException
+     */
     private static void sendResponse(Socket client, String status, String contentType, byte[] content) throws IOException {
         OutputStream clientOutput = client.getOutputStream();
         clientOutput.write(("HTTP/1.1 \r\n" + status).getBytes());
