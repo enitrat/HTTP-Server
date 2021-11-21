@@ -80,6 +80,7 @@ public class WebServer {
         BufferedReader in = new BufferedReader(new InputStreamReader(
                 client.getInputStream()));
 
+
         //Parsing request data
         StringBuilder stringBuffer = new StringBuilder();
         String inputLine;
@@ -87,14 +88,6 @@ public class WebServer {
             stringBuffer.append(inputLine);
             stringBuffer.append("\r\n");
         }
-        StringBuilder stringBuilder = new StringBuilder();
-//        char[] charBuffer = new char[128];
-//        int bytesRead = -1;
-//        while ((bytesRead = in.read(charBuffer)) > 0) {
-//            stringBuilder.append(charBuffer, 0, bytesRead);
-//        }
-//        System.out.println("BODY: " + stringBuilder.toString());
-
 
         String request = stringBuffer.toString();
         System.out.println("request: " + request);
@@ -106,10 +99,15 @@ public class WebServer {
         String version = requestLine[2];
         String host = requestsLines[1].split(" ")[1];
 
+        int contentLength = -1;
         List<String> headers = new ArrayList<>();
         for (int h = 2; h < requestsLines.length; h++) {
             String header = requestsLines[h];
             headers.add(header);
+            if (header.startsWith("Content-Length:")) {
+                String cl = header.substring("Content-Length:".length()).trim();
+                contentLength = Integer.parseInt(cl);
+            }
         }
 
         String accessLog = String.format("Client %s, method %s, path %s, version %s, host %s, headers %s",
@@ -127,7 +125,9 @@ public class WebServer {
             if (method.equals("GET")) {
                 doGET(client, resource);
             } else if (method.equals("POST")) {
-                doPOST(client, resource);
+                char[] body = new char[contentLength];  //<-- http body is here
+                in.read(body);
+                doPOST(client, resource, body);
             } else {
                 sendEmptyResponse(client, "501 Not Implemented");
             }
@@ -168,26 +168,19 @@ public class WebServer {
      * @param filename
      * @throws IOException
      */
-    private void doPOST(Socket client, String filename) throws IOException {
+    private void doPOST(Socket client, String filename, char[] body) throws IOException {
         try {
             File file = new File(filename);
             boolean appendMode = file.exists();
             //Output stream will be in append mode if the file exists, otherwise in the beginning
             BufferedOutputStream fOut = new BufferedOutputStream(new FileOutputStream(file, appendMode));
-            BufferedInputStream in = new BufferedInputStream(client.getInputStream());
-
-            //Using a byte array to ensure that we can ready the body
-            byte[] buffer = new byte[256];
-            while(in.available() > 0) {
-                int nbRead = in.read(buffer);
-                fOut.write(buffer, 0, nbRead);
-            }
+            System.out.println(body);
+            fOut.write(new String(body).getBytes());
             if (appendMode) {
                 sendEmptyResponse(client, "200 OK");
             } else {
                 sendEmptyResponse(client, "201 CREATED");
             }
-            in.close();
             fOut.flush();
             fOut.close();
         } catch (Exception e1) {
