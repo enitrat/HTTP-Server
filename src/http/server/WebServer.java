@@ -9,9 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Example program from Chapter 1 Programming Spiders, Bots and Aggregators in
@@ -26,9 +24,9 @@ import java.util.Map;
 public class WebServer {
 
     public static final int PORT = 8080;
-    private static final String RESOURCE_DIRECTORY = "doc";
-    private static final String INDEX_FILENAME = "doc/index.html";
-    private static final String ERROR_404 = "doc/404.html";
+    private static final String AUTHORIZED_DIRECTORY = "doc";
+    private static final String INDEX_PATH = "doc/index.html";
+    private static final String ERROR_PATH = "doc/404.html";
 
 
     /**
@@ -36,6 +34,7 @@ public class WebServer {
      */
     protected void start() {
         ServerSocket s;
+        Socket client = null;
 
         System.out.println("Webserver starting up on port " + PORT);
         System.out.println("(press ctrl-c to exit)");
@@ -51,16 +50,28 @@ public class WebServer {
         for (; ; ) {
             try {
                 // wait for a connection
-                Socket client = s.accept();
+                client = s.accept();
                 handleClient(client);
-            } catch (Exception e) {
-                System.out.println("Error: " + e);
+            } catch (Exception e1) {
+                System.out.println("Error: " + e1);
+                e1.printStackTrace();
+                try {
+                    sendEmptyResponse(client, "500 Internal Server Error");
+                } catch (Exception e2) {
+                }
+                try {
+                    client.close();
+                } catch (Exception e) {
+                }
+
             }
         }
     }
 
+
     /**
      * Handles the client actions once there is a client connected
+     *
      * @param client
      * @throws IOException
      */
@@ -70,13 +81,24 @@ public class WebServer {
                 client.getInputStream()));
 
         //Parsing request data
-        StringBuilder requestBuilder = new StringBuilder();
-        String line;
-        while (!(line = in.readLine()).isBlank()) {
-            requestBuilder.append(line + "\r\n");
+        StringBuilder stringBuffer = new StringBuilder();
+        String inputLine;
+        while ((inputLine = in.readLine()) != null && !inputLine.equals("")) {
+            stringBuffer.append(inputLine);
+            stringBuffer.append("\r\n");
         }
-        String request = requestBuilder.toString();
-        System.out.println(request);
+        StringBuilder stringBuilder = new StringBuilder();
+//        char[] charBuffer = new char[128];
+//        int bytesRead = -1;
+//        while ((bytesRead = in.read(charBuffer)) > 0) {
+//            stringBuilder.append(charBuffer, 0, bytesRead);
+//        }
+//        System.out.println("BODY: " + stringBuilder.toString());
+
+
+        String request = stringBuffer.toString();
+        System.out.println("request: " + request);
+
         String[] requestsLines = request.split("\r\n");
         String[] requestLine = requestsLines[0].split(" ");
         String method = requestLine[0];
@@ -96,62 +118,115 @@ public class WebServer {
 
         /**
          * If resource is empty, redirect to index file
-         * If it's withing the authorized directory, call the httpGet methode
+         * If it's withing the authorized directory, call the corresponding method
          * Otherwise, access is forbidden for security purposes
          */
         if (resource.isEmpty()) {
-            httpGET(client, INDEX_FILENAME);
-        } else if (resource.startsWith(RESOURCE_DIRECTORY)) {
+            doGET(client, INDEX_PATH);
+        } else if (resource.startsWith(AUTHORIZED_DIRECTORY)) {
             if (method.equals("GET")) {
-                httpGET(client, resource);
+                doGET(client, resource);
+            } else if (method.equals("POST")) {
+                doPOST(client, resource);
             } else {
-                sendResponse(client, "501 Not Implemented", null, null);
+                sendEmptyResponse(client, "501 Not Implemented");
             }
-        }
-        else{
+        } else {
             byte[] notFoundContent = "<h1>Access forbidden</h1>".getBytes();
-            sendResponse(client, "403 Forbidden", "text/html", notFoundContent);
-
+            sendContentResponse(client, "403 Forbidden", "text/html", notFoundContent);
         }
+        in.close();
     }
 
     /**
      * Given a client and a filename to access, returns to the client the content of the file if it exists
      * or 404 otherwise.
+     *
      * @param client
      * @param filename
      * @throws IOException
      */
-    private void httpGET(Socket client, String filename) throws IOException {
-        File resource = new File(filename);
-        if (resource.exists() && resource.isFile()) {
+    private void doGET(Socket client, String filename) throws IOException {
+        File file = new File(filename);
+        if (file.exists() && file.isFile()) {
             Path filePath = Paths.get(filename);
             String contentType = guessContentType(filePath);
-            sendResponse(client, "200 OK", contentType, Files.readAllBytes(filePath));
+            sendContentResponse(client, "200 OK", contentType, Files.readAllBytes(filePath));
         } else {
-            Path filePath = Paths.get(ERROR_404);
+            Path filePath = Paths.get(ERROR_PATH);
             String contentType = guessContentType(filePath);
-            sendResponse(client, "404 Not Found", contentType, Files.readAllBytes(filePath));
+            sendContentResponse(client, "404 Not Found", contentType, Files.readAllBytes(filePath));
         }
     }
 
     /**
+     * handles the POST request.
+     * Creates a resource if the specified file doesn't exist already.
+     * Otherwise, appends the new information to the specified file.
+     *
+     * @param client
+     * @param filename
+     * @throws IOException
+     */
+    private void doPOST(Socket client, String filename) throws IOException {
+        try {
+            File file = new File(filename);
+            boolean appendMode = file.exists();
+            //Output stream will be in append mode if the file exists, otherwise in the beginning
+            BufferedOutputStream fOut = new BufferedOutputStream(new FileOutputStream(file, appendMode));
+            BufferedInputStream in = new BufferedInputStream(client.getInputStream());
+
+            //Using a byte array to ensure that we can ready the body
+            byte[] buffer = new byte[256];
+            while(in.available() > 0) {
+                int nbRead = in.read(buffer);
+                fOut.write(buffer, 0, nbRead);
+            }
+            if (appendMode) {
+                sendEmptyResponse(client, "200 OK");
+            } else {
+                sendEmptyResponse(client, "201 CREATED");
+            }
+            in.close();
+            fOut.flush();
+            fOut.close();
+        } catch (Exception e1) {
+            e1.printStackTrace();
+            try {
+                sendEmptyResponse(client, "500 Internal Server Error");
+            } catch (Exception e2) {
+                System.out.println(e2);
+            }
+        }
+
+    }
+
+    private static void sendEmptyResponse(Socket client, String status) throws IOException {
+        OutputStream clientOutput = client.getOutputStream();
+        clientOutput.write(("HTTP/1.1 " + status + "\r\n").getBytes());
+        clientOutput.write("\r\n".getBytes());
+        clientOutput.flush();
+        clientOutput.close();
+    }
+
+    /**
      * Sends the response to the client.
+     *
      * @param client
      * @param status
      * @param contentType
      * @param content
      * @throws IOException
      */
-    private static void sendResponse(Socket client, String status, String contentType, byte[] content) throws IOException {
+    private static void sendContentResponse(Socket client, String status, String contentType, byte[] content) throws IOException {
         OutputStream clientOutput = client.getOutputStream();
-        clientOutput.write(("HTTP/1.1 \r\n" + status).getBytes());
+        clientOutput.write(("HTTP/1.1 " + status + "\r\n").getBytes());
         clientOutput.write(("ContentType: " + contentType + "\r\n").getBytes());
         clientOutput.write("\r\n".getBytes());
         clientOutput.write(content);
         clientOutput.write("\r\n\r\n".getBytes());
         clientOutput.flush();
-        client.close();
+        clientOutput.close();
     }
 
     private static String guessContentType(Path filePath) throws IOException {
