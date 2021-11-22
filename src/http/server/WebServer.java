@@ -91,9 +91,12 @@ public class WebServer {
 
         String request = stringBuffer.toString();
         System.out.println("request: " + request);
-
+        if(request.isEmpty()){
+            return;
+        }
         String[] requestsLines = request.split("\r\n");
         String[] requestLine = requestsLines[0].split(" ");
+
         String method = requestLine[0];
         String resource = requestLine[1].substring(1, requestLine[1].length());
         String version = requestLine[2];
