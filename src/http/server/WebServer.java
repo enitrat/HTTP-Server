@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+import static javax.script.ScriptEngine.FILENAME;
+
 /**
  * Example program from Chapter 1 Programming Spiders, Bots and Aggregators in
  * Java Copyright 2001 by Jeff Heaton
@@ -27,6 +29,7 @@ public class WebServer {
 
     public static final int PORT = 8080;
     private static final String AUTHORIZED_DIRECTORY = "doc";
+    private static final String AUTHORIZED_USER_DIRECTORY = "doc/users/";
     private static final String INDEX_PATH = "doc/index.html";
     private static final String ERROR_PATH = "doc/404.html";
 
@@ -137,7 +140,22 @@ public class WebServer {
             else if (method.equals("HEAD")){
                 doHEAD(client,INDEX_PATH);
             }
-        } else if (filename.startsWith(AUTHORIZED_DIRECTORY)) {
+        } else if (filename.isEmpty()){
+            if (method.equals("PUT")) {
+                String parsedString = getParsedString(in, contentLength);
+                String data = parsedString;
+                parsedString = createHTMLFile(data);
+                filename = createHTMLFileName(data);
+                doPUT(client,filename, parsedString);
+            } else if(method.equals("POST")){
+                String parsedString = getParsedString(in, contentLength);
+                String data = parsedString;
+                parsedString = createHTMLFile(data);
+                filename = createHTMLFileName(data);
+                doPOST(client, filename, parsedString);
+            }
+        }else if (filename.startsWith(AUTHORIZED_DIRECTORY)) {
+            System.out.println("here");
             if (method.equals("GET")) {
                 doGET(client, filename);
             } else if (method.equals("POST")) {
@@ -166,6 +184,9 @@ public class WebServer {
         in.close();
     }
 
+
+
+
     private String getParsedString(BufferedReader in, int contentLength) throws IOException {
         char[] body = new char[contentLength];
         in.read(body);
@@ -178,7 +199,7 @@ public class WebServer {
             if (line.startsWith("--")){
                 boundaryLine = line;
             }
-            if (!line.startsWith(boundaryLine) && (!line.startsWith("Content"))){
+            if (boundaryLine==null || (!line.startsWith(boundaryLine) && (!line.startsWith("Content")))){
                 newStringBuilder.append(line+"\r\n");
             }
         }
@@ -339,5 +360,33 @@ public class WebServer {
     public static void main(String[] args) {
         WebServer ws = new WebServer();
         ws.start();
+    }
+
+
+    private String createHTMLFile(String parsedString) {
+        String[] data = parsedString.split("&");
+        String type = data[0].split("=")[1];
+        String resultat= "";
+        if(type.equals("user")){
+            resultat += "<HTML>";
+            resultat += "<HEAD> <TITLE> Hello "+ data[1].split("=")[1].replace("+"," ") + "</TITLE> </HEAD>";
+            resultat += "<BODY>";
+            resultat += "<H1>"+ data[1].split("=")[1]+"</H1>";
+            resultat += "<DIV>"+data[2].split("=")[0] + " : "+data[2].split("=")[1].replace("+"," ")+ "</DIV>";
+            resultat += "<DIV>"+data[3].split("=")[0] + " : "+data[3].split("=")[1].replace("+"," ")+ "</DIV>";
+            resultat += "<DIV>"+data[4].split("=")[0] + " : "+data[4].split("=")[1].replace("+"," ")+ "</DIV>";
+            resultat += "</BODY></HTML>";
+        }
+        return resultat;
+    }
+
+    private String createHTMLFileName(String parsedString) {
+        String[] data = parsedString.split("&");
+        String type = data[0].split("=")[1];
+        String resultat= "";
+        if(type.equals("user")){
+            resultat = AUTHORIZED_USER_DIRECTORY+data[1].split("=")[1].replace("+"," ")+".html";
+        }
+        return resultat;
     }
 }
