@@ -184,9 +184,14 @@ public class WebServer {
         in.close();
     }
 
-
-
-
+    /**
+     * Returns a parsed string from a file sent by the client. The parsed string removes all boundaries and Content indications
+     * from the file.
+     * @param in
+     * @param contentLength
+     * @return
+     * @throws IOException
+     */
     private String getParsedString(BufferedReader in, int contentLength) throws IOException {
         char[] body = new char[contentLength];
         in.read(body);
