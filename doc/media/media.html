@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link href="https://unpkg.com/tailwindcss@2.1.4/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body style="background: #edf2f7;">
+<h1 class="text-gray-900 font-bold text-6xl tracking-tight flex items-center justify-center p-4"> Media Library</h1>
+<br>
+
+<div class="flex items-center mb-2 justify-center">
+    <div class="grid grid-flow-row-dense grid-cols-2 p-4 gap-5 justify-between sm:grid-cols-2 md:grid-cols-2" id="library">
+
+    </div>
+</div>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+            console.log(window.location.origin+"/doc/media/media.json");
+
+        var settings = {
+            "url": window.location.origin+"/doc/media/media.json",
+            "method": "GET",
+            "timeout": 0,
+        };
+
+        $.ajax(settings).done(function (response) {
+            console.log(response);
+
+            response.movies.forEach(element =>
+                $("#library").append('<div class="bg-white shadow-md border border-gray-200 rounded-lg max-w-sm mb-5">' +
+                    '<a href="'+element.usefullink+'"><img  class="rounded-t-lg" src="'+element.picture+'"></a> ' +
+                    '<div class="p-5">' +
+                    '<h5 class="text-gray-900 font-bold text-2xl tracking-tight mb-2">'+element.name+'</h5>' +
+                    '<p class="font-bold text-gray-700"> Director : '+element.director+'</p>' +
+                    '<p class="font-bold text-gray-700"> Producer : '+element.producer+'</p>' +
+                    '<p class="font-bold text-gray-700"> Actors : '+element.actors+'</p><br>' +
+                    '<p class="font-normal text-gray-700"> Type : '+element.type+' - Gender : '+element.gender+'</p>' +
+                    '<p class="font-normal text-gray-700"> Date of release : '+element.date+' - Time : '+element.time+'</p><br>' +
+                    '<p class="font-bold text-gray-700"> Abstract </p>' +
+                    '<p class="font-normal text-gray-700 mb-3">'+element.abstract+'</p>' +
+                    '<a class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-2 text-center inline-flex items-center" href="'+element.usefullink+'">Read more</a> ' +
+                    '</div>' +
+                    "</div>")
+            );
+
+
+        })
+
+    });
+</script>
+</body>

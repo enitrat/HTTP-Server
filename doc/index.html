@@ -34,6 +34,24 @@
         </form>
     </div>
 
+    <h2> Media library </h2> <a href="./doc/media/media.html"> Consult the library</a> <br>
+    <div>
+        <form>
+            <div><span> Name : </span> <input type="text" name="name_movie" id="name_movie"></div>
+            <div><span> Type : </span> <input type="text" name="type_movie" id="type_movie"></div>
+            <div><span> Gender : </span> <input type="text" name="gender_movie" id="gender_movie"></div>
+            <div><span> Date of release : </span> <input type="date" name="date_movie" id="date_movie"></div>
+            <div><span> Abstract : </span><br> <input type="text" name="abstract_movie" id="abstract_movie" rows="5" cols="33"></div>
+            <div><span> Time : </span> <input type="text" name="time_movie" id="time_movie"></div>
+            <div><span> Director : </span><input type="text" name="director_movie" id="director_movie"></div>
+            <div><span> Producer : </span><input type="text" name="producer_movie" id="producer_movie"></div>
+            <div><span> Actors : </span><input type="text" name="actors_movie" id="actors_movie"></div>
+            <div><span> Useful link : </span><input type="text" name="usefullink_movie" id="usefullink_movie"></div>
+            <div><span> Picture : </span><input type="text" name="picture_movie" id="picture_movie"></div>
+            <div><input type="button" value="Add the media" name="media" id="media"></div>
+        </form>
+    </div>
+
     <h2> POST </h2>
     <div>
         <form method="post"> Select a file to POST:
@@ -145,14 +163,16 @@
                 var settings = {
                     "url": window.location.href+"doc/"+filename,
                     "method": "DELETE",
+                    "success": function(response) {
+                        console.log(response);
+                        alert("Success!");
+                    }
                 };
 
                 $.ajax(settings).done(function (response) {
                         console.log(response);
                     }
-                        .success(function (response) {
-                            alert("Success!");
-                        })
+
                 );
             }
         });
@@ -168,15 +188,60 @@
                 $.ajax(settings).done(function (response) {
                         console.log(response);
                     }
-                        .success(function (response) {
-                            console.log(response);
-                            alert("Success!");
-                        })
+
                 );
             }
         });
 
 
+        $("#media").click(function () {
+
+            let json = "{" +
+                '"name":' + '"'+$("#name_movie").val() +'",'+
+                '"type":' + '"'+$("#type_movie").val() +'",'+
+                '"gender":' + '"'+$("#gender_movie").val() +'",'+
+                '"date":' + '"'+$("#date_movie").val() +'",'+
+                '"abstract":' + '"'+$("#abstract_movie").val() +'",'+
+                '"time":' + '"'+$("#time_movie").val() +'",'+
+                '"director":' + '"'+$("#director_movie").val() +'",'+
+                '"producer":' + '"'+$("#producer_movie").val() +'",'+
+                '"actors":' + '"'+$("#actors_movie").val() +'",'+
+                '"usefullink":' + '"'+$("#usefullink_movie").val() +'",'+
+                '"picture":' + '"'+$("#picture_movie").val() +'"'+
+                "}";
+            console.log(JSON.parse(json));
+
+            var settings = {
+                "url":  window.location.href+"doc/media/media.json",
+                "method": "GET",
+                "timeout": 0,
+            };
+
+            $.ajax(settings).done(function (response) {
+                console.log(response);
+                response['movies'].push(JSON.parse(json))
+                console.log(response);
+
+                settings = {
+                    "url": window.location.href+"doc/media/media.json",
+                    "method": "PUT",
+                    "timeout": 0,
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "data": JSON.stringify(response),
+                    "success": function(response) {
+                        console.log(response);
+                        alert("Success!");
+                    }
+                };
+                $.ajax(settings).done(function (response) {
+                    console.log(response);
+                });
+            });
+
+
+        });
 
 
     });
