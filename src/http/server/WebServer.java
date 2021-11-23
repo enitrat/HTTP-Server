@@ -56,7 +56,7 @@ public class WebServer {
                 System.out.println("Error: " + e1);
                 e1.printStackTrace();
                 try {
-                    sendEmptyResponse(client, "500 Internal Server Error");
+                    sendHeader(client, "500 Internal Server Error");
                 } catch (Exception e2) {
                 }
                 try {
@@ -80,7 +80,6 @@ public class WebServer {
         BufferedReader in = new BufferedReader(new InputStreamReader(
                 client.getInputStream()));
 
-
         //Parsing request data
         StringBuilder stringBuffer = new StringBuilder();
         String inputLine;
@@ -91,14 +90,15 @@ public class WebServer {
 
         String request = stringBuffer.toString();
         System.out.println("request: " + request);
-        if(request.isEmpty()){
+        if (request.isEmpty()) {
+            sendHeader(client,"400 Bad Request");
             return;
         }
         String[] requestsLines = request.split("\r\n");
         String[] requestLine = requestsLines[0].split(" ");
 
         String method = requestLine[0];
-        String resource = requestLine[1].substring(1, requestLine[1].length());
+        String filename = requestLine[1].substring(1, requestLine[1].length());
         String version = requestLine[2];
         String host = requestsLines[1].split(" ")[1];
 
@@ -114,7 +114,7 @@ public class WebServer {
         }
 
         String accessLog = String.format("Client %s, method %s, path %s, version %s, host %s, headers %s",
-                client, method, resource, version, host, headers);
+                client, method, filename, version, host, headers);
         System.out.println(accessLog);
 
         /**
@@ -122,22 +122,47 @@ public class WebServer {
          * If it's withing the authorized directory, call the corresponding method
          * Otherwise, access is forbidden for security purposes
          */
-        if (resource.isEmpty()) {
-            doGET(client, INDEX_PATH);
-        } else if (resource.startsWith(AUTHORIZED_DIRECTORY)) {
+        try{
+            if(headers.isEmpty() || method.isEmpty()){
+                sendHeader(client,"400 Bad Request");
+                return;
+            }
+
+        if (filename.isEmpty() && (method.equals("GET") || method.equals("HEAD"))) {
             if (method.equals("GET")) {
-                doGET(client, resource);
+                doGET(client, INDEX_PATH);
+            }
+            else if (method.equals("HEAD")){
+                doHEAD(client,INDEX_PATH);
+            }
+        } else if (filename.startsWith(AUTHORIZED_DIRECTORY)) {
+            if (method.equals("GET")) {
+                doGET(client, filename);
             } else if (method.equals("POST")) {
                 char[] body = new char[contentLength];  //<-- http body is here
                 in.read(body);
-                doPOST(client, resource, body);
+                doPOST(client, filename, body);
+            } else if (method.equals("PUT")) {
+                char[] body = new char[contentLength];
+                in.read(body);
+                doPUT(client, filename, body);
+            }else if (method.equals("HEAD")) {
+                doHEAD(client, filename);
+            }else if (method.equals("DELETE")){
+                doDELETE(client,filename);
             } else {
-                sendEmptyResponse(client, "501 Not Implemented");
+                sendHeader(client, "501 Not Implemented");
             }
         } else {
-            byte[] notFoundContent = "<h1>Access forbidden</h1>".getBytes();
-            sendContentResponse(client, "403 Forbidden", "text/html", notFoundContent);
+            sendHeader(client, "403 Forbidden");
         }
+        }catch(Exception e){
+            try{
+                sendHeader(client,"500 Internal Server Error");
+            }catch(Exception e2){
+            }
+        }
+
         in.close();
     }
 
@@ -154,13 +179,25 @@ public class WebServer {
         if (file.exists() && file.isFile()) {
             Path filePath = Paths.get(filename);
             String contentType = guessContentType(filePath);
-            sendContentResponse(client, "200 OK", contentType, Files.readAllBytes(filePath));
+            sendContentResponse(client, "200 OK", contentType, Files.readAllBytes(filePath),file.length());
         } else {
-            Path filePath = Paths.get(ERROR_PATH);
-            String contentType = guessContentType(filePath);
-            sendContentResponse(client, "404 Not Found", contentType, Files.readAllBytes(filePath));
+            sendHeader(client, "404 Not Found");
         }
+
     }
+
+    private void doHEAD(Socket client, String filename) throws IOException {
+        File file = new File(filename);
+        if (file.exists() && file.isFile()) {
+            Path filePath = Paths.get(filename);
+            String contentType = guessContentType(filePath);
+            sendHeader(client, "200 OK", contentType, file.length());
+        } else {
+            sendHeader(client, "404 Not Found");
+        }
+
+    }
+
 
     /**
      * handles the POST request.
@@ -172,34 +209,78 @@ public class WebServer {
      * @throws IOException
      */
     private void doPOST(Socket client, String filename, char[] body) throws IOException {
-        try {
-            File file = new File(filename);
-            boolean appendMode = file.exists();
-            //Output stream will be in append mode if the file exists, otherwise in the beginning
-            BufferedOutputStream fOut = new BufferedOutputStream(new FileOutputStream(file, appendMode));
-            System.out.println(body);
-            fOut.write(new String(body).getBytes());
-            if (appendMode) {
-                sendEmptyResponse(client, "200 OK");
-            } else {
-                sendEmptyResponse(client, "201 CREATED");
-            }
-            fOut.flush();
-            fOut.close();
-        } catch (Exception e1) {
-            e1.printStackTrace();
-            try {
-                sendEmptyResponse(client, "500 Internal Server Error");
-            } catch (Exception e2) {
-                System.out.println(e2);
-            }
+        File file = new File(filename);
+        boolean appendMode = file.exists();
+        //Output stream will be in append mode if the file exists, otherwise in the beginning
+        BufferedOutputStream fOut = new BufferedOutputStream(new FileOutputStream(file, appendMode));
+        System.out.println(body);
+        fOut.write(new String(body).getBytes());
+        if (appendMode) {
+            sendHeader(client, "200 OK");
+        } else {
+            sendHeader(client, "201 Created");
         }
-
+        fOut.flush();
+        fOut.close();
     }
 
-    private static void sendEmptyResponse(Socket client, String status) throws IOException {
+    /**
+     * Implementation of the HTTP PUT request method according to the specifications listed on
+     * <a href=https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PUT>the mozilla developer docs</a>
+     *
+     * @param client
+     * @param filename
+     * @param body
+     */
+    private void doPUT(Socket client, String filename, char[] body) throws IOException {
+        File file = new File(filename);//Output stream will be in append mode if the file exists, otherwise in the beginning
+        boolean exists = file.exists();
+        PrintWriter writer = new PrintWriter(filename);
+        writer.print("");
+        writer.close();
+        BufferedOutputStream fOut = new BufferedOutputStream(new FileOutputStream(file));
+        System.out.println(body);
+        fOut.write(new String(body).getBytes());
+        if (exists) {
+            sendHeader(client, "204 No Content");
+        } else {
+            sendHeader(client, "201 Created");
+        }
+        fOut.flush();
+        fOut.close();
+    }
+
+    private void doDELETE(Socket client, String filename) throws IOException {
+        File file = new File(filename);//Output stream will be in append mode if the file exists, otherwise in the beginning
+        boolean exists = file.exists();
+        boolean deleted = false;
+        if (file.exists() && file.isFile()) {
+            deleted = file.delete();
+        }
+        if(deleted){
+            sendHeader(client,"204 No Content");
+        }
+        else if (!exists){
+            sendHeader(client,"404 Not Found");
+        }
+        else{
+            sendHeader(client,"403 Forbidden");
+        }
+    }
+
+    private static void sendHeader(Socket client, String status) throws IOException {
         OutputStream clientOutput = client.getOutputStream();
         clientOutput.write(("HTTP/1.1 " + status + "\r\n").getBytes());
+        clientOutput.write("\r\n".getBytes());
+        clientOutput.flush();
+        clientOutput.close();
+    }
+
+    private static void sendHeader(Socket client, String status, String contentType, long length) throws IOException {
+        OutputStream clientOutput = client.getOutputStream();
+        clientOutput.write(("HTTP/1.1 " + status + "\r\n").getBytes());
+        clientOutput.write(("Content-Type: " + contentType + "\r\n").getBytes());
+        clientOutput.write(("Content-Length: " + length + "\r\n").getBytes());
         clientOutput.write("\r\n".getBytes());
         clientOutput.flush();
         clientOutput.close();
@@ -214,10 +295,11 @@ public class WebServer {
      * @param content
      * @throws IOException
      */
-    private static void sendContentResponse(Socket client, String status, String contentType, byte[] content) throws IOException {
+    private static void sendContentResponse(Socket client, String status, String contentType, byte[] content, long length) throws IOException {
         OutputStream clientOutput = client.getOutputStream();
         clientOutput.write(("HTTP/1.1 " + status + "\r\n").getBytes());
-        clientOutput.write(("ContentType: " + contentType + "\r\n").getBytes());
+        clientOutput.write(("Content-Type: " + contentType + "\r\n").getBytes());
+        clientOutput.write(("Content-Length: " + length + "\r\n").getBytes());
         clientOutput.write("\r\n".getBytes());
         clientOutput.write(content);
         clientOutput.write("\r\n\r\n".getBytes());
