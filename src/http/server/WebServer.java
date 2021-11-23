@@ -5,11 +5,13 @@ package http.server;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 /**
  * Example program from Chapter 1 Programming Spiders, Bots and Aggregators in
@@ -78,7 +80,7 @@ public class WebServer {
     private void handleClient(Socket client) throws IOException {
         //opening IO streams to communicate with client
         BufferedReader in = new BufferedReader(new InputStreamReader(
-                client.getInputStream()));
+                client.getInputStream(),StandardCharsets.UTF_8));
 
         //Parsing request data
         StringBuilder stringBuffer = new StringBuilder();
@@ -139,13 +141,11 @@ public class WebServer {
             if (method.equals("GET")) {
                 doGET(client, filename);
             } else if (method.equals("POST")) {
-                char[] body = new char[contentLength];  //<-- http body is here
-                in.read(body);
-                doPOST(client, filename, body);
+                String parsedString = getParsedString(in, contentLength);
+                doPOST(client, filename, parsedString);
             } else if (method.equals("PUT")) {
-                char[] body = new char[contentLength];
-                in.read(body);
-                doPUT(client, filename, body);
+                String parsedString = getParsedString(in, contentLength);
+                doPUT(client, filename, parsedString);
             }else if (method.equals("HEAD")) {
                 doHEAD(client, filename);
             }else if (method.equals("DELETE")){
@@ -164,6 +164,27 @@ public class WebServer {
         }
 
         in.close();
+    }
+
+    private String getParsedString(BufferedReader in, int contentLength) throws IOException {
+        char[] body = new char[contentLength];
+        in.read(body);
+        String strBody = new String(body);
+        Scanner scanner = new Scanner(strBody);
+        String boundaryLine = null;
+        StringBuilder newStringBuilder = new StringBuilder();
+        while (scanner.hasNextLine()) {
+            String line = scanner.nextLine();
+            if (line.startsWith("--")){
+                boundaryLine = line;
+            }
+            if (!line.startsWith(boundaryLine) && (!line.startsWith("Content"))){
+                newStringBuilder.append(line+"\r\n");
+            }
+        }
+        scanner.close();
+        String parsedString = newStringBuilder.toString();
+        return parsedString;
     }
 
     /**
@@ -208,13 +229,12 @@ public class WebServer {
      * @param filename
      * @throws IOException
      */
-    private void doPOST(Socket client, String filename, char[] body) throws IOException {
+    private void doPOST(Socket client, String filename, String body) throws IOException {
         File file = new File(filename);
         boolean appendMode = file.exists();
         //Output stream will be in append mode if the file exists, otherwise in the beginning
         BufferedOutputStream fOut = new BufferedOutputStream(new FileOutputStream(file, appendMode));
-        System.out.println(body);
-        fOut.write(new String(body).getBytes());
+        fOut.write(body.getBytes(StandardCharsets.UTF_8));
         if (appendMode) {
             sendHeader(client, "200 OK");
         } else {
@@ -232,15 +252,15 @@ public class WebServer {
      * @param filename
      * @param body
      */
-    private void doPUT(Socket client, String filename, char[] body) throws IOException {
+    private void doPUT(Socket client, String filename, String body) throws IOException {
         File file = new File(filename);//Output stream will be in append mode if the file exists, otherwise in the beginning
         boolean exists = file.exists();
         PrintWriter writer = new PrintWriter(filename);
         writer.print("");
         writer.close();
         BufferedOutputStream fOut = new BufferedOutputStream(new FileOutputStream(file));
-        System.out.println(body);
-        fOut.write(new String(body).getBytes());
+//        System.out.println(body);
+        fOut.write(body.getBytes(StandardCharsets.UTF_8));
         if (exists) {
             sendHeader(client, "204 No Content");
         } else {
