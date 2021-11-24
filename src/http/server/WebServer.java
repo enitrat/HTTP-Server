@@ -5,6 +5,7 @@ package http.server;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.Buffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -82,23 +83,30 @@ public class WebServer {
      */
     private void handleClient(Socket client) throws IOException {
         //opening IO streams to communicate with client
-        BufferedReader in = new BufferedReader(new InputStreamReader(
-                client.getInputStream(),StandardCharsets.UTF_8));
 
-        //Parsing request data
-        StringBuilder stringBuffer = new StringBuilder();
-        String inputLine;
-        while ((inputLine = in.readLine()) != null && !inputLine.equals("")) {
-            stringBuffer.append(inputLine);
-            stringBuffer.append("\r\n");
+        BufferedInputStream in = new BufferedInputStream(client.getInputStream());
+        String request = new String();
+        // Le header se termine par la séquence \r\n\r\n (CR LF CR LF)
+        int bcur = '\0', bprec = '\0';
+        boolean newline = false;
+        while((bcur = in.read()) != -1 && !(newline && bprec == '\r' && bcur == '\n')) {
+            if(bprec == '\r' && bcur == '\n') {
+                newline = true;
+            } else if(!(bprec == '\n' && bcur == '\r')) {
+                newline = false;
+            }
+            bprec = bcur;
+            request += (char) bcur;
         }
 
-        String request = stringBuffer.toString();
+        // Ici si bcur == -1 il y a une erreur, le protocole n'a pas �t� respect� (le Header ne se termine pas par une ligne vide)
+
         System.out.println("request: " + request);
         if (request.isEmpty()) {
             sendHeader(client,"400 Bad Request");
             return;
         }
+
         String[] requestsLines = request.split("\r\n");
         String[] requestLine = requestsLines[0].split(" ");
 
@@ -109,7 +117,7 @@ public class WebServer {
 
         int contentLength = -1;
         List<String> headers = new ArrayList<>();
-        for (int h = 2; h < requestsLines.length; h++) {
+        for (int h = 2; h < requestsLines.length-1; h++) {
             String header = requestsLines[h];
             headers.add(header);
             if (header.startsWith("Content-Length:")) {
@@ -117,11 +125,11 @@ public class WebServer {
                 contentLength = Integer.parseInt(cl);
             }
         }
+        System.out.println("headers" + headers.toString());
 
         String accessLog = String.format("Client %s, method %s, path %s, version %s, host %s, headers %s",
                 client, method, filename, version, host, headers);
         System.out.println(accessLog);
-
         /**
          * If resource is empty, redirect to index file
          * If it's withing the authorized directory, call the corresponding method
@@ -142,28 +150,25 @@ public class WebServer {
             }
         } else if (filename.isEmpty()){
             if (method.equals("PUT")) {
-                String parsedString = getParsedString(in, contentLength);
-                String data = parsedString;
-                parsedString = createHTMLFile(data);
-                filename = createHTMLFileName(data);
-                doPUT(client,filename, parsedString);
+//                String parsedString = getParsedString(in, contentLength);
+//                String data = parsedString;
+//                parsedString = createHTMLFile(data);
+//                filename = createHTMLFileName(data);
+                doPUT(in, client,filename);
             } else if(method.equals("POST")){
                 String parsedString = getParsedString(in, contentLength);
                 String data = parsedString;
                 parsedString = createHTMLFile(data);
                 filename = createHTMLFileName(data);
-                doPOST(client, filename, parsedString);
+                doPOST(in, client, filename);
             }
         }else if (filename.startsWith(AUTHORIZED_DIRECTORY)) {
-            System.out.println("here");
             if (method.equals("GET")) {
                 doGET(client, filename);
             } else if (method.equals("POST")) {
-                String parsedString = getParsedString(in, contentLength);
-                doPOST(client, filename, parsedString);
+                doPOST(in,client,filename);
             } else if (method.equals("PUT")) {
-                String parsedString = getParsedString(in, contentLength);
-                doPUT(client, filename, parsedString);
+                doPUT(in, client,filename);
             }else if (method.equals("HEAD")) {
                 doHEAD(client, filename);
             }else if (method.equals("DELETE")){
@@ -192,9 +197,10 @@ public class WebServer {
      * @return
      * @throws IOException
      */
-    private String getParsedString(BufferedReader in, int contentLength) throws IOException {
-        char[] body = new char[contentLength];
-        in.read(body);
+    private String getParsedString(BufferedInputStream in, int contentLength) throws IOException {
+        byte[] body = new byte[contentLength];
+        int nbRead = in.read(body);
+        System.out.println(body.toString());
         String strBody = new String(body);
         Scanner scanner = new Scanner(strBody);
         String boundaryLine = null;
@@ -251,16 +257,21 @@ public class WebServer {
      * Creates a resource if the specified file doesn't exist already.
      * Otherwise, appends the new information to the specified file.
      *
+     * @param in
      * @param client
      * @param filename
      * @throws IOException
      */
-    private void doPOST(Socket client, String filename, String body) throws IOException {
+    private void doPOST(BufferedInputStream in, Socket client, String filename) throws IOException {
         File file = new File(filename);
         boolean appendMode = file.exists();
         //Output stream will be in append mode if the file exists, otherwise in the beginning
         BufferedOutputStream fOut = new BufferedOutputStream(new FileOutputStream(file, appendMode));
-        fOut.write(body.getBytes(StandardCharsets.UTF_8));
+        byte[] buffer = new byte[256];
+        while(in.available() > 0) {
+            int nbRead = in.read(buffer);
+            fOut.write(buffer, 0, nbRead);
+        }
         if (appendMode) {
             sendHeader(client, "200 OK");
         } else {
@@ -274,19 +285,22 @@ public class WebServer {
      * Implementation of the HTTP PUT request method according to the specifications listed on
      * <a href=https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PUT>the mozilla developer docs</a>
      *
+     * @param in
      * @param client
      * @param filename
-     * @param body
      */
-    private void doPUT(Socket client, String filename, String body) throws IOException {
+    private void doPUT(BufferedInputStream in, Socket client, String filename) throws IOException {
         File file = new File(filename);//Output stream will be in append mode if the file exists, otherwise in the beginning
         boolean exists = file.exists();
         PrintWriter writer = new PrintWriter(filename);
         writer.print("");
         writer.close();
         BufferedOutputStream fOut = new BufferedOutputStream(new FileOutputStream(file));
-//        System.out.println(body);
-        fOut.write(body.getBytes(StandardCharsets.UTF_8));
+        byte[] buffer = new byte[256];
+        while(in.available() > 0) {
+            int nbRead = in.read(buffer);
+            fOut.write(buffer, 0, nbRead);
+        }
         if (exists) {
             sendHeader(client, "204 No Content");
         } else {
