@@ -128,18 +128,21 @@ public class WebServer {
                 return;
             }
 
-            if (filename.isEmpty() && (method.equals("GET") || method.equals("HEAD"))) {
+            if (filename.isEmpty()){
                 if (method.equals("GET")) {
                     doGET(client, INDEX_PATH);
                 } else if (method.equals("HEAD")) {
                     doHEAD(client, INDEX_PATH);
                 }
-            } else if (filename.isEmpty()) {
-                if (method.equals("PUT")) {
+                else if (method.equals("PUT")) {
                     doPUT(in, client, filename);
                 } else if (method.equals("POST")) {
                     doPOST(in, client, filename);
                 }
+                else{
+                    sendHeader(client, "403 Forbidden");
+                }
+
             } else if (filename.startsWith(AUTHORIZED_DIRECTORY)) {
                 if (method.equals("GET")) {
                     doGET(client, filename);
