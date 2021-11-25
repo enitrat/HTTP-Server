@@ -30,6 +30,7 @@ public class WebServer {
 
     public static final int PORT = 8080;
     private static final String AUTHORIZED_DIRECTORY = "doc";
+    private static final String AUTHORIZED_USER_DIRECTORY = "doc/users/";
     private static final String INDEX_PATH = "doc/index.html";
     private static final String ERROR_PATH = "doc/404.html";
 
@@ -127,20 +128,23 @@ public class WebServer {
                 return;
             }
 
-            if (filename.isEmpty() && (method.equals("GET") || method.equals("HEAD") || method.equals("OPTIONS"))) {
+            if (filename.isEmpty()){
                 if (method.equals("GET")) {
                     doGET(client, INDEX_PATH);
                 } else if (method.equals("HEAD")) {
                     doHEAD(client, INDEX_PATH);
-                } else {
+                } else if (method.equals("OPTIONS")) {
                     doOPTIONS(client, INDEX_PATH);
                 }
-            } else if (filename.isEmpty()) {
-                if (method.equals("PUT")) {
+                else if (method.equals("PUT")) {
                     doPUT(in, client, filename);
                 } else if (method.equals("POST")) {
                     doPOST(in, client, filename);
                 }
+                else{
+                    sendHeader(client, "403 Forbidden");
+                }
+
             } else if (filename.startsWith(AUTHORIZED_DIRECTORY)) {
                 if (method.equals("GET")) {
                     doGET(client, filename);
