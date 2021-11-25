@@ -155,31 +155,6 @@
                     }
                 );
 
-            } else {
-                let resultat = "<HTML>";
-                resultat += "<HEAD> <TITLE> Hello " + $("#name").val() + "</TITLE> </HEAD>";
-                resultat += "<BODY>";
-                resultat += "<H1>" + $("#name").val() + "</H1>";
-                resultat += "<DIV>" + $("#email").val() + "</DIV>";
-                resultat += "<DIV>" + $("#phone").val() + "</DIV>";
-                resultat += "<DIV>" + $("#password").val() + "</DIV>";
-                resultat += "</BODY></HTML>";
-
-
-                var settings = {
-                    "url": window.location.href + "doc/" + $("name").val(),
-                    "method": "POST",
-                    "contentType": "text/plain",
-                    "data": resultat,
-                    "success": function (response) {
-                        alert("Success!");
-                    }
-                };
-
-                $.ajax(settings).done(function (response) {
-                        console.log(response);
-                    }
-                );
             }
         });
 
@@ -204,31 +179,6 @@
                     "mimeType": "multipart/form-data",
                     "contentType": false,
                     "data": form,
-                    "success": function (response) {
-                        alert("Success!");
-                    }
-                };
-
-                $.ajax(settings).done(function (response) {
-                        console.log(response);
-                    }
-                );
-            } else {
-                let resultat = "<HTML>";
-                resultat += "<HEAD> <TITLE> Hello " + $("#name").val() + "</TITLE> </HEAD>";
-                resultat += "<BODY>";
-                resultat += "<H1>" + $("#name").val() + "</H1>";
-                resultat += "<DIV>" + $("#email").val() + "</DIV>";
-                resultat += "<DIV>" + $("#phone").val() + "</DIV>";
-                resultat += "<DIV>" + $("#password").val() + "</DIV>";
-                resultat += "</BODY></HTML>";
-
-
-                var settings = {
-                    "url": window.location.href + "doc/" + $("name").val(),
-                    "method": "POST",
-                    "contentType": "text/plain",
-                    "data": resultat,
                     "success": function (response) {
                         alert("Success!");
                     }
