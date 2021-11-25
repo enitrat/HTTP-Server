@@ -82,11 +82,9 @@ public class WebServer {
      * @throws IOException
      */
     private void handleClient(Socket client) throws IOException {
-        //opening IO streams to communicate with client
-
         BufferedInputStream in = new BufferedInputStream(client.getInputStream());
         String request = new String();
-        // Le header se termine par la séquence \r\n\r\n (CR LF CR LF)
+
         int bcur = '\0', bprec = '\0';
         boolean newline = false;
         while((bcur = in.read()) != -1 && !(newline && bprec == '\r' && bcur == '\n')) {
@@ -98,8 +96,6 @@ public class WebServer {
             bprec = bcur;
             request += (char) bcur;
         }
-
-        // Ici si bcur == -1 il y a une erreur, le protocole n'a pas �t� respect� (le Header ne se termine pas par une ligne vide)
 
         System.out.println("request: " + request);
         if (request.isEmpty()) {
@@ -115,21 +111,11 @@ public class WebServer {
         String version = requestLine[2];
         String host = requestsLines[1].split(" ")[1];
 
-        int contentLength = -1;
         List<String> headers = new ArrayList<>();
         for (int h = 2; h < requestsLines.length-1; h++) {
             String header = requestsLines[h];
             headers.add(header);
-            if (header.startsWith("Content-Length:")) {
-                String cl = header.substring("Content-Length:".length()).trim();
-                contentLength = Integer.parseInt(cl);
-            }
         }
-        System.out.println("headers" + headers.toString());
-
-        String accessLog = String.format("Client %s, method %s, path %s, version %s, host %s, headers %s",
-                client, method, filename, version, host, headers);
-        System.out.println(accessLog);
         /**
          * If resource is empty, redirect to index file
          * If it's withing the authorized directory, call the corresponding method
@@ -150,16 +136,8 @@ public class WebServer {
             }
         } else if (filename.isEmpty()){
             if (method.equals("PUT")) {
-//                String parsedString = getParsedString(in, contentLength);
-//                String data = parsedString;
-//                parsedString = createHTMLFile(data);
-//                filename = createHTMLFileName(data);
                 doPUT(in, client,filename);
             } else if(method.equals("POST")){
-                String parsedString = getParsedString(in, contentLength);
-                String data = parsedString;
-                parsedString = createHTMLFile(data);
-                filename = createHTMLFileName(data);
                 doPOST(in, client, filename);
             }
         }else if (filename.startsWith(AUTHORIZED_DIRECTORY)) {
@@ -189,35 +167,6 @@ public class WebServer {
         in.close();
     }
 
-    /**
-     * Returns a parsed string from a file sent by the client. The parsed string removes all boundaries and Content indications
-     * from the file.
-     * @param in
-     * @param contentLength
-     * @return
-     * @throws IOException
-     */
-    private String getParsedString(BufferedInputStream in, int contentLength) throws IOException {
-        byte[] body = new byte[contentLength];
-        int nbRead = in.read(body);
-        System.out.println(body.toString());
-        String strBody = new String(body);
-        Scanner scanner = new Scanner(strBody);
-        String boundaryLine = null;
-        StringBuilder newStringBuilder = new StringBuilder();
-        while (scanner.hasNextLine()) {
-            String line = scanner.nextLine();
-            if (line.startsWith("--")){
-                boundaryLine = line;
-            }
-            if (boundaryLine==null || (!line.startsWith(boundaryLine) && (!line.startsWith("Content")))){
-                newStringBuilder.append(line+"\r\n");
-            }
-        }
-        scanner.close();
-        String parsedString = newStringBuilder.toString();
-        return parsedString;
-    }
 
     /**
      * Given a client and a filename to access, returns to the client the content of the file if it exists
@@ -250,7 +199,6 @@ public class WebServer {
         }
 
     }
-
 
     /**
      * handles the POST request.
@@ -296,6 +244,7 @@ public class WebServer {
         writer.print("");
         writer.close();
         BufferedOutputStream fOut = new BufferedOutputStream(new FileOutputStream(file));
+
         byte[] buffer = new byte[256];
         while(in.available() > 0) {
             int nbRead = in.read(buffer);
@@ -379,33 +328,5 @@ public class WebServer {
     public static void main(String[] args) {
         WebServer ws = new WebServer();
         ws.start();
-    }
-
-
-    private String createHTMLFile(String parsedString) {
-        String[] data = parsedString.split("&");
-        String type = data[0].split("=")[1];
-        String resultat= "";
-        if(type.equals("user")){
-            resultat += "<HTML>";
-            resultat += "<HEAD> <TITLE> Hello "+ data[1].split("=")[1].replace("+"," ") + "</TITLE> </HEAD>";
-            resultat += "<BODY>";
-            resultat += "<H1>"+ data[1].split("=")[1]+"</H1>";
-            resultat += "<DIV>"+data[2].split("=")[0] + " : "+data[2].split("=")[1].replace("+"," ")+ "</DIV>";
-            resultat += "<DIV>"+data[3].split("=")[0] + " : "+data[3].split("=")[1].replace("+"," ")+ "</DIV>";
-            resultat += "<DIV>"+data[4].split("=")[0] + " : "+data[4].split("=")[1].replace("+"," ")+ "</DIV>";
-            resultat += "</BODY></HTML>";
-        }
-        return resultat;
-    }
-
-    private String createHTMLFileName(String parsedString) {
-        String[] data = parsedString.split("&");
-        String type = data[0].split("=")[1];
-        String resultat= "";
-        if(type.equals("user")){
-            resultat = AUTHORIZED_USER_DIRECTORY+data[1].split("=")[1].replace("+"," ")+".html";
-        }
-        return resultat;
     }
 }

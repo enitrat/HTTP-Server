@@ -10,7 +10,7 @@
 
     <h2> CREATE AN USER WITH PUT</h2>
     <div>
-        <form method="post" target="_blank" action=".">
+        <form method="post">
             <div>
                 <input type="hidden" id="type" value="user" name="type">
             </div>
@@ -18,16 +18,16 @@
                 <span> Name :</span><input type="text" name="name" id="name">
             </div>
             <div>
-            <span> Email :</span><input type="text" name="email" id="email">
+                <span> Email :</span><input type="text" name="email" id="email">
             </div>
             <div>
-            <span> Phone :</span><input type="text" name="phone" id="phone">
+                <span> Phone :</span><input type="text" name="phone" id="phone">
             </div>
             <div>
-            <span> Password :</span><input type="password" name="password" id="password">
+                <span> Password :</span><input type="password" name="password" id="password">
             </div>
             <div>
-            <input type="submit" id="submitUSERE" value="CreateUsere" name="submitUSERE">
+                <input type="button" id="submitUSER" value="createUSER" name="submitUSER">
                 <span> you will be able to acces data of the user by GET /doc/users/username.html</span>
             </div>
 
@@ -41,7 +41,8 @@
             <div><span> Type : </span> <input type="text" name="type_movie" id="type_movie"></div>
             <div><span> Gender : </span> <input type="text" name="gender_movie" id="gender_movie"></div>
             <div><span> Date of release : </span> <input type="date" name="date_movie" id="date_movie"></div>
-            <div><span> Abstract : </span><br> <input type="text" name="abstract_movie" id="abstract_movie" rows="5" cols="33"></div>
+            <div><span> Abstract : </span><br> <input type="text" name="abstract_movie" id="abstract_movie" rows="5"
+                                                      cols="33"></div>
             <div><span> Time : </span> <input type="text" name="time_movie" id="time_movie"></div>
             <div><span> Director : </span><input type="text" name="director_movie" id="director_movie"></div>
             <div><span> Producer : </span><input type="text" name="producer_movie" id="producer_movie"></div>
@@ -94,31 +95,90 @@
 </div>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
 <script>
+
     $(document).ready(function () {
+
+        console.log("ready");
+
+        $("#submitUSER").click(function () {
+            var filename = $("#name").val() + ".html";
+            let resultat = "<!DOCTYPE html> <html>";
+            resultat += "<head> <title> Hello " + $("#name").val() + "</title> </head>";
+            resultat += "<body>";
+            resultat += "<h1>" + $("#name").val() + "</h1>";
+            resultat += "<div>" + $("#email").val() + "</div>";
+            resultat += "<div>" + $("#phone").val() + "</div>";
+            resultat += "<div>" + $("#password").val() + "</div>";
+            resultat += "</body></html>";
+
+            var url = window.location.href + "doc/users/" + filename;
+            var settings = {
+                "url": url,
+                "method": "POST",
+                "contentType": "text/plain",
+                "data": resultat,
+                "success": function (response) {
+                    alert("Success!");
+                }
+            };
+
+            $.ajax(settings).done(function (response) {
+                    console.log(response);
+                    window.open(url);
+                }
+            );
+        });
+
         $("#submitPOST").click(function () {
             var filename = $("#fileToUploadPOST").val();
-            if(filename!==""){
-                var leafname= filename.split('\\').pop().split('/').pop();
+            console.log("filename" + filename);
+            if (filename !== "") {
+                var leafname = filename.split('\\').pop().split('/').pop();
                 var form = new FormData();
                 form.append(leafname, $("#fileToUploadPOST").prop('files')[0]);
                 var settings = {
-                    "url": window.location.href+"doc/"+leafname,
+                    "url": window.location.href + "doc/" + leafname,
                     "method": "POST",
                     "timeout": 0,
                     "processData": false,
                     "mimeType": "multipart/form-data",
                     "contentType": false,
                     "data": form,
-                    "success": function(response) {
+                    "success": function (response) {
                         alert("Success!");
                     }
                 };
 
 
+                $.ajax(settings).done(function (response) {
+                        console.log(response);
+                    }
+                );
 
-                 $.ajax(settings).done(function (response) {
-                    console.log(response);
-                }
+            } else {
+                let resultat = "<HTML>";
+                resultat += "<HEAD> <TITLE> Hello " + $("#name").val() + "</TITLE> </HEAD>";
+                resultat += "<BODY>";
+                resultat += "<H1>" + $("#name").val() + "</H1>";
+                resultat += "<DIV>" + $("#email").val() + "</DIV>";
+                resultat += "<DIV>" + $("#phone").val() + "</DIV>";
+                resultat += "<DIV>" + $("#password").val() + "</DIV>";
+                resultat += "</BODY></HTML>";
+
+
+                var settings = {
+                    "url": window.location.href + "doc/" + $("name").val(),
+                    "method": "POST",
+                    "contentType": "text/plain",
+                    "data": resultat,
+                    "success": function (response) {
+                        alert("Success!");
+                    }
+                };
+
+                $.ajax(settings).done(function (response) {
+                        console.log(response);
+                    }
                 );
             }
         });
@@ -126,25 +186,50 @@
 
         $("#submitGET").click(function () {
             var filename = $("#fileToUploadGET").val();
-            if(filename!==""){
-                window.location.href = window.location.href+"doc/"+filename
+            if (filename !== "") {
+                window.location.href = window.location.href + "doc/" + filename
             }
         });
 
         $("#submitPUT").click(function () {
             var filename = $("#fileToUploadPUT").val();
-            if(filename!==""){
-                var leafname= filename.split('\\').pop().split('/').pop();
+            if (filename !== "") {
+                var leafname = filename.split('\\').pop().split('/').pop();
                 form.append(leafname, $("#fileToUploadPOST").prop('files')[0]);
                 var settings = {
-                    "url": window.location.href+"doc/"+leafname,
+                    "url": window.location.href + "doc/" + leafname,
                     "method": "POST",
                     "timeout": 0,
                     "processData": false,
                     "mimeType": "multipart/form-data",
                     "contentType": false,
                     "data": form,
-                    "success": function(response) {
+                    "success": function (response) {
+                        alert("Success!");
+                    }
+                };
+
+                $.ajax(settings).done(function (response) {
+                        console.log(response);
+                    }
+                );
+            } else {
+                let resultat = "<HTML>";
+                resultat += "<HEAD> <TITLE> Hello " + $("#name").val() + "</TITLE> </HEAD>";
+                resultat += "<BODY>";
+                resultat += "<H1>" + $("#name").val() + "</H1>";
+                resultat += "<DIV>" + $("#email").val() + "</DIV>";
+                resultat += "<DIV>" + $("#phone").val() + "</DIV>";
+                resultat += "<DIV>" + $("#password").val() + "</DIV>";
+                resultat += "</BODY></HTML>";
+
+
+                var settings = {
+                    "url": window.location.href + "doc/" + $("name").val(),
+                    "method": "POST",
+                    "contentType": "text/plain",
+                    "data": resultat,
+                    "success": function (response) {
                         alert("Success!");
                     }
                 };
@@ -159,11 +244,11 @@
 
         $("#submitDELETE").click(function () {
             var filename = $("#fileToUploadDELETE").val();
-            if(filename!==""){
+            if (filename !== "") {
                 var settings = {
-                    "url": window.location.href+"doc/"+filename,
+                    "url": window.location.href + "doc/" + filename,
                     "method": "DELETE",
-                    "success": function(response) {
+                    "success": function (response) {
                         console.log(response);
                         alert("Success!");
                     }
@@ -172,23 +257,21 @@
                 $.ajax(settings).done(function (response) {
                         console.log(response);
                     }
-
                 );
             }
         });
 
         $("#submitHEAD").click(function () {
             var filename = $("#fileToUploadHEAD").val();
-            if(filename!==""){
+            if (filename !== "") {
                 var settings = {
-                    "url": window.location.href+"doc/"+filename,
+                    "url": window.location.href + "doc/" + filename,
                     "method": "HEAD",
                 };
 
                 $.ajax(settings).done(function (response) {
                         console.log(response);
                     }
-
                 );
             }
         });
@@ -197,22 +280,22 @@
         $("#media").click(function () {
 
             let json = "{" +
-                '"name":' + '"'+$("#name_movie").val() +'",'+
-                '"type":' + '"'+$("#type_movie").val() +'",'+
-                '"gender":' + '"'+$("#gender_movie").val() +'",'+
-                '"date":' + '"'+$("#date_movie").val() +'",'+
-                '"abstract":' + '"'+$("#abstract_movie").val() +'",'+
-                '"time":' + '"'+$("#time_movie").val() +'",'+
-                '"director":' + '"'+$("#director_movie").val() +'",'+
-                '"producer":' + '"'+$("#producer_movie").val() +'",'+
-                '"actors":' + '"'+$("#actors_movie").val() +'",'+
-                '"usefullink":' + '"'+$("#usefullink_movie").val() +'",'+
-                '"picture":' + '"'+$("#picture_movie").val() +'"'+
+                '"name":' + '"' + $("#name_movie").val() + '",' +
+                '"type":' + '"' + $("#type_movie").val() + '",' +
+                '"gender":' + '"' + $("#gender_movie").val() + '",' +
+                '"date":' + '"' + $("#date_movie").val() + '",' +
+                '"abstract":' + '"' + $("#abstract_movie").val() + '",' +
+                '"time":' + '"' + $("#time_movie").val() + '",' +
+                '"director":' + '"' + $("#director_movie").val() + '",' +
+                '"producer":' + '"' + $("#producer_movie").val() + '",' +
+                '"actors":' + '"' + $("#actors_movie").val() + '",' +
+                '"usefullink":' + '"' + $("#usefullink_movie").val() + '",' +
+                '"picture":' + '"' + $("#picture_movie").val() + '"' +
                 "}";
             console.log(JSON.parse(json));
 
             var settings = {
-                "url":  window.location.href+"doc/media/media.json",
+                "url": window.location.href + "doc/media/media.json",
                 "method": "GET",
                 "timeout": 0,
             };
@@ -223,14 +306,14 @@
                 console.log(response);
 
                 settings = {
-                    "url": window.location.href+"doc/media/media.json",
+                    "url": window.location.href + "doc/media/media.json",
                     "method": "PUT",
                     "timeout": 0,
                     "headers": {
                         "Content-Type": "application/json"
                     },
                     "data": JSON.stringify(response),
-                    "success": function(response) {
+                    "success": function (response) {
                         console.log(response);
                         alert("Success!");
                     }
