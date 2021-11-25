@@ -85,12 +85,13 @@ public class WebServer {
         BufferedInputStream in = new BufferedInputStream(client.getInputStream());
         String request = new String();
 
+        //While we don't encounter an EOF or a CRLF, we add to the request string the parameters.
         int bcur = '\0', bprec = '\0';
         boolean newline = false;
-        while((bcur = in.read()) != -1 && !(newline && bprec == '\r' && bcur == '\n')) {
-            if(bprec == '\r' && bcur == '\n') {
+        while ((bcur = in.read()) != -1 && !(newline && bprec == '\r' && bcur == '\n')) {
+            if (bprec == '\r' && bcur == '\n') {
                 newline = true;
-            } else if(!(bprec == '\n' && bcur == '\r')) {
+            } else if (!(bprec == '\n' && bcur == '\r')) {
                 newline = false;
             }
             bprec = bcur;
@@ -99,7 +100,7 @@ public class WebServer {
 
         System.out.println("request: " + request);
         if (request.isEmpty()) {
-            sendHeader(client,"400 Bad Request");
+            sendHeader(client, "400 Bad Request");
             return;
         }
 
@@ -112,7 +113,7 @@ public class WebServer {
         String host = requestsLines[1].split(" ")[1];
 
         List<String> headers = new ArrayList<>();
-        for (int h = 2; h < requestsLines.length-1; h++) {
+        for (int h = 2; h < requestsLines.length - 1; h++) {
             String header = requestsLines[h];
             headers.add(header);
         }
@@ -121,49 +122,47 @@ public class WebServer {
          * If it's withing the authorized directory, call the corresponding method
          * Otherwise, access is forbidden for security purposes
          */
-        try{
-            if(headers.isEmpty() || method.isEmpty()){
-                sendHeader(client,"400 Bad Request");
+        try {
+            if (headers.isEmpty() || method.isEmpty()) {
+                sendHeader(client, "400 Bad Request");
                 return;
             }
 
-        if (filename.isEmpty() && (method.equals("GET") || method.equals("HEAD"))) {
-            if (method.equals("GET")) {
-                doGET(client, INDEX_PATH);
-            }
-            else if (method.equals("HEAD")){
-                doHEAD(client,INDEX_PATH);
-            }
-        } else if (filename.isEmpty()){
-            if (method.equals("PUT")) {
-                doPUT(in, client,filename);
-            } else if(method.equals("POST")){
-                doPOST(in, client, filename);
-            }
-        }else if (filename.startsWith(AUTHORIZED_DIRECTORY)) {
-            if (method.equals("GET")) {
-                doGET(client, filename);
-            } else if (method.equals("POST")) {
-                doPOST(in,client,filename);
-            } else if (method.equals("PUT")) {
-                doPUT(in, client,filename);
-            }else if (method.equals("HEAD")) {
-                doHEAD(client, filename);
-            }else if (method.equals("DELETE")){
-                doDELETE(client,filename);
+            if (filename.isEmpty() && (method.equals("GET") || method.equals("HEAD"))) {
+                if (method.equals("GET")) {
+                    doGET(client, INDEX_PATH);
+                } else if (method.equals("HEAD")) {
+                    doHEAD(client, INDEX_PATH);
+                }
+            } else if (filename.isEmpty()) {
+                if (method.equals("PUT")) {
+                    doPUT(in, client, filename);
+                } else if (method.equals("POST")) {
+                    doPOST(in, client, filename);
+                }
+            } else if (filename.startsWith(AUTHORIZED_DIRECTORY)) {
+                if (method.equals("GET")) {
+                    doGET(client, filename);
+                } else if (method.equals("POST")) {
+                    doPOST(in, client, filename);
+                } else if (method.equals("PUT")) {
+                    doPUT(in, client, filename);
+                } else if (method.equals("HEAD")) {
+                    doHEAD(client, filename);
+                } else if (method.equals("DELETE")) {
+                    doDELETE(client, filename);
+                } else {
+                    sendHeader(client, "501 Not Implemented");
+                }
             } else {
-                sendHeader(client, "501 Not Implemented");
+                sendHeader(client, "403 Forbidden");
             }
-        } else {
-            sendHeader(client, "403 Forbidden");
-        }
-        }catch(Exception e){
-            try{
-                sendHeader(client,"500 Internal Server Error");
-            }catch(Exception e2){
+        } catch (Exception e) {
+            try {
+                sendHeader(client, "500 Internal Server Error");
+            } catch (Exception e2) {
             }
         }
-
         in.close();
     }
 
@@ -181,11 +180,10 @@ public class WebServer {
         if (file.exists() && file.isFile()) {
             Path filePath = Paths.get(filename);
             String contentType = guessContentType(filePath);
-            sendContentResponse(client, "200 OK", contentType, Files.readAllBytes(filePath),file.length());
+            sendContentResponse(client, "200 OK", contentType, Files.readAllBytes(filePath), file.length());
         } else {
             sendHeader(client, "404 Not Found");
         }
-
     }
 
     private void doHEAD(Socket client, String filename) throws IOException {
@@ -197,7 +195,6 @@ public class WebServer {
         } else {
             sendHeader(client, "404 Not Found");
         }
-
     }
 
     /**
@@ -216,7 +213,7 @@ public class WebServer {
         //Output stream will be in append mode if the file exists, otherwise in the beginning
         BufferedOutputStream fOut = new BufferedOutputStream(new FileOutputStream(file, appendMode));
         byte[] buffer = new byte[256];
-        while(in.available() > 0) {
+        while (in.available() > 0) {
             int nbRead = in.read(buffer);
             fOut.write(buffer, 0, nbRead);
         }
@@ -246,7 +243,7 @@ public class WebServer {
         BufferedOutputStream fOut = new BufferedOutputStream(new FileOutputStream(file));
 
         byte[] buffer = new byte[256];
-        while(in.available() > 0) {
+        while (in.available() > 0) {
             int nbRead = in.read(buffer);
             fOut.write(buffer, 0, nbRead);
         }
@@ -266,14 +263,12 @@ public class WebServer {
         if (file.exists() && file.isFile()) {
             deleted = file.delete();
         }
-        if(deleted){
-            sendHeader(client,"204 No Content");
-        }
-        else if (!exists){
-            sendHeader(client,"404 Not Found");
-        }
-        else{
-            sendHeader(client,"403 Forbidden");
+        if (deleted) {
+            sendHeader(client, "204 No Content");
+        } else if (!exists) {
+            sendHeader(client, "404 Not Found");
+        } else {
+            sendHeader(client, "403 Forbidden");
         }
     }
 
