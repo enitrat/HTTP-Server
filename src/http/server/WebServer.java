@@ -30,7 +30,6 @@ public class WebServer {
 
     public static final int PORT = 8080;
     private static final String AUTHORIZED_DIRECTORY = "doc";
-    private static final String AUTHORIZED_USER_DIRECTORY = "doc/users/";
     private static final String INDEX_PATH = "doc/index.html";
     private static final String ERROR_PATH = "doc/404.html";
 
@@ -128,11 +127,13 @@ public class WebServer {
                 return;
             }
 
-            if (filename.isEmpty() && (method.equals("GET") || method.equals("HEAD"))) {
+            if (filename.isEmpty() && (method.equals("GET") || method.equals("HEAD") || method.equals("OPTIONS"))) {
                 if (method.equals("GET")) {
                     doGET(client, INDEX_PATH);
                 } else if (method.equals("HEAD")) {
                     doHEAD(client, INDEX_PATH);
+                } else {
+                    doOPTIONS(client, INDEX_PATH);
                 }
             } else if (filename.isEmpty()) {
                 if (method.equals("PUT")) {
@@ -151,7 +152,9 @@ public class WebServer {
                     doHEAD(client, filename);
                 } else if (method.equals("DELETE")) {
                     doDELETE(client, filename);
-                } else {
+                } else if (method.equals("OPTIONS")) {
+                    doOPTIONS(client, filename);
+                }else {
                     sendHeader(client, "501 Not Implemented");
                 }
             } else {
@@ -272,6 +275,15 @@ public class WebServer {
         }
     }
 
+    private void doOPTIONS(Socket client, String filename) throws IOException {
+        File file = new File(filename);
+        if (file.exists() && file.isFile()) {
+            sendContentOPTIONS(client, "200 OK", "OPTIONS, GET, HEAD, POST, PUT, DELETE");
+        } else {
+            sendHeader(client, "404 Not Found");
+        }
+    }
+
     private static void sendHeader(Socket client, String status) throws IOException {
         OutputStream clientOutput = client.getOutputStream();
         clientOutput.write(("HTTP/1.1 " + status + "\r\n").getBytes());
@@ -306,6 +318,16 @@ public class WebServer {
         clientOutput.write(("Content-Length: " + length + "\r\n").getBytes());
         clientOutput.write("\r\n".getBytes());
         clientOutput.write(content);
+        clientOutput.write("\r\n\r\n".getBytes());
+        clientOutput.flush();
+        clientOutput.close();
+    }
+
+    private static void sendContentOPTIONS(Socket client, String status, String allows) throws IOException {
+        OutputStream clientOutput = client.getOutputStream();
+        clientOutput.write(("HTTP/1.1 " + status + "\r\n").getBytes());
+        clientOutput.write(("Allow: " + allows + "\r\n").getBytes());
+        clientOutput.write(("Content-Length: 0" + "\r\n").getBytes());
         clientOutput.write("\r\n\r\n".getBytes());
         clientOutput.flush();
         clientOutput.close();

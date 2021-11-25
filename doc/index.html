@@ -101,13 +101,20 @@
             <input type="button" id="submitHEAD" value="Head of a file" name="submitHEAD">
         </form>
     </div>
+
+    <h2> OPTIONS </h2>
+    <div>
+        <form> Select a file to get options:
+            <input type="text" name="fileToUploadOPTIONS" id="fileToUploadOPTIONS">
+            <input type="button" id="submitOPTIONS" value="Head of a file" name="submitOPTIONS">
+        </form>
+    </div>
 </div>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
 <script>
 
     $(document).ready(function () {
 
-        console.log("ready");
 
         $("#submitUSER").click(function () {
             var filename = $("#name").val() + ".html";
@@ -115,9 +122,9 @@
             resultat += "<head> <title> Hello " + $("#name").val() + "</title> </head>";
             resultat += "<body>";
             resultat += "<h1>" + $("#name").val() + "</h1>";
-            resultat += "<div>" + $("#email").val() + "</div>";
-            resultat += "<div>" + $("#phone").val() + "</div>";
-            resultat += "<div>" + $("#password").val() + "</div>";
+            resultat += "<div> Email :" + $("#email").val() + "</div>";
+            resultat += "<div> Phone :" + $("#phone").val() + "</div>";
+            resultat += "<div> Password:" + $("#password").val() + "</div>";
             resultat += "</body></html>";
 
             var url = window.location.href + "doc/users/" + filename;
@@ -126,13 +133,17 @@
                 "method": "POST",
                 "contentType": "text/plain",
                 "data": resultat,
-                "success": function (response) {
-                    alert("Success!");
+                "success": function (xml, textStatus, xhr) {
+                    console.log(xhr.status)
+                    alert("Success ! Code :"+  xhr.status);
+                },
+                "error": function(xhr, textStatus, errorThrown) {
+                    console.log(xhr.status)
+                    alert("Fail ! Code :"+  xhr.status);
                 }
             };
 
-            $.ajax(settings).done(function (response) {
-                    console.log(response);
+            $.ajax(settings).done(function (xhr, textStatus) {
                     window.open(url);
                 }
             );
@@ -153,8 +164,13 @@
                     "mimeType": "multipart/form-data",
                     "contentType": false,
                     "data": form,
-                    "success": function (response) {
-                        alert("Success!");
+                    "success": function (xml, textStatus, xhr) {
+                        console.log(xhr.status)
+                        alert("Success ! Code :"+  xhr.status);
+                    },
+                    "error": function(xhr, textStatus, errorThrown) {
+                        console.log(xhr.status)
+                        alert("Fail ! Code :"+  xhr.status);
                     }
                 };
 
@@ -188,8 +204,13 @@
                     "mimeType": "multipart/form-data",
                     "contentType": false,
                     "data": form,
-                    "success": function (response) {
-                        alert("Success!");
+                    "success": function (xml, textStatus, xhr) {
+                        console.log(xhr.status)
+                        alert("Success ! Code :"+  xhr.status);
+                    },
+                    "error": function(xhr, textStatus, errorThrown) {
+                        console.log(xhr.status)
+                        alert("Fail ! Code :"+  xhr.status);
                     }
                 };
 
@@ -207,9 +228,38 @@
                 var settings = {
                     "url": window.location.href + "doc/" + filename,
                     "method": "DELETE",
-                    "success": function (response) {
+                    "success": function (xml, textStatus, xhr) {
+                        console.log(xhr.status)
+                        alert("Success ! Code :"+  xhr.status);
+                    },
+                    "error": function(xhr, textStatus, errorThrown) {
+                        console.log(xhr.status)
+                        alert("Fail ! Code :"+  xhr.status);
+                    }
+                };
+
+                $.ajax(settings).done(function (response) {
                         console.log(response);
-                        alert("Success!");
+                    }
+                );
+            }
+        });
+
+        $("#submitOPTIONS").click(function () {
+            var filename = $("#fileToUploadOPTIONS").val();
+            if (filename !== "") {
+                var settings = {
+                    "url": window.location.href + "doc/" + filename,
+                    "method": "OPTIONS",
+                    "success": function (xml, textStatus, xhr) {
+                        console.log(xhr.status)
+                        console.log(xhr.getResponseHeader("allow"))
+                        alert("Success ! Code :"+  xhr.status +"\n" +
+                            "Methods allowed :" + xhr.getResponseHeader("allow"));
+                    },
+                    "error": function(xhr, textStatus, errorThrown) {
+                        console.log(xhr.status)
+                        alert("Fail ! Code :"+  xhr.status);
                     }
                 };
 
@@ -226,6 +276,14 @@
                 var settings = {
                     "url": window.location.href + "doc/" + filename,
                     "method": "HEAD",
+                    "success": function (xml, textStatus, xhr) {
+                        console.log(xhr.status)
+                        alert("Success ! Code :"+  xhr.status);
+                    },
+                    "error": function(xhr, textStatus, errorThrown) {
+                        console.log(xhr.status)
+                        alert("Fail ! Code :"+  xhr.status);
+                    }
                 };
 
                 $.ajax(settings).done(function (response) {
@@ -251,7 +309,7 @@
                 '"usefullink":' + '"' + $("#usefullink_movie").val() + '",' +
                 '"picture":' + '"' + $("#picture_movie").val() + '"' +
                 "}";
-            console.log(JSON.parse(json));
+
 
             var settings = {
                 "url": window.location.href + "doc/media/media.json",
@@ -260,9 +318,8 @@
             };
 
             $.ajax(settings).done(function (response) {
-                console.log(response);
                 response['movies'].push(JSON.parse(json))
-                console.log(response);
+
 
                 settings = {
                     "url": window.location.href + "doc/media/media.json",
@@ -272,9 +329,13 @@
                         "Content-Type": "application/json"
                     },
                     "data": JSON.stringify(response),
-                    "success": function (response) {
-                        console.log(response);
-                        alert("Success!");
+                    "success": function (xml, textStatus, xhr) {
+                        console.log(xhr.status)
+                        alert("Success ! Code :"+  xhr.status);
+                    },
+                    "error": function(xhr, textStatus, errorThrown) {
+                        console.log(xhr.status)
+                        alert("Fail ! Code :"+  xhr.status);
                     }
                 };
                 $.ajax(settings).done(function (response) {
