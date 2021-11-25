@@ -115,6 +115,10 @@ public class WebServer {
         List<String> headers = new ArrayList<>();
         for (int h = 2; h < requestsLines.length - 1; h++) {
             String header = requestsLines[h];
+            if(requestsLines[h].startsWith("Content-Type: multipart/form-data")){
+                sendHeader(client, "501 Not Implemented");
+                return;
+            }
             headers.add(header);
         }
         /**
