@@ -53,21 +53,9 @@
         </form>
     </div>
 
-    <h2> POST </h2>
+    <h2> POST/PUT</h2>
     <div>
-        <form method="post"> Select a file to POST:
-            <input type="file" name="fileToUploadPOST" id="fileToUploadPOST">
-            <input type="button" id="submitPOST" value="Upload file" name="submitPOST">
-        </form>
-    </div>
-
-
-    <h2> POST multiple files </h2>
-    <div>
-        <form method="post"> Select a file to POST:
-            <input type="file" name="fileToUploadPOSTFILES" id="fileToUploadPOSTFILES" multiple>
-            <input type="button" id="submitPOSTFILES" value="Upload file" name="submitPOSTFILES">
-        </form>
+        <p> Please, to post or put a file use postman </p>
     </div>
 
     <h2> GET </h2>
@@ -83,14 +71,6 @@
         <form method="delete"> Select a file name to DELETE:
             <input type="text" name="fileToUploadDELETE" id="fileToUploadDELETE">
             <input type="button" id="submitDELETE" value="Delete file" name="submitDELETE">
-        </form>
-    </div>
-
-    <h2> PUT </h2>
-    <div>
-        <form method="put"> Select a file to PUT:
-            <input type="file" name="fileToUploadPUT" id="fileToUploadPUT">
-            <input type="button" id="submitPUT" value="Put file" name="submitPUT">
         </form>
     </div>
 
@@ -149,41 +129,6 @@
             );
         });
 
-        $("#submitPOST").click(function () {
-            var filename = $("#fileToUploadPOST").val();
-            console.log("filename" + filename);
-            if (filename !== "") {
-                var leafname = filename.split('\\').pop().split('/').pop();
-                var form = new FormData();
-                form.append(leafname, $("#fileToUploadPOST").prop('files')[0]);
-                var settings = {
-                    "url": window.location.href + "doc/" + leafname,
-                    "method": "POST",
-                    "timeout": 0,
-                    "processData": false,
-                    "mimeType": "multipart/form-data",
-                    "contentType": false,
-                    "data": form,
-                    "success": function (xml, textStatus, xhr) {
-                        console.log(xhr.status)
-                        alert("Success ! Code :"+  xhr.status);
-                    },
-                    "error": function(xhr, textStatus, errorThrown) {
-                        console.log(xhr.status)
-                        alert("Fail ! Code :"+  xhr.status);
-                    }
-                };
-
-
-                $.ajax(settings).done(function (response) {
-                        console.log(response);
-                    }
-                );
-
-            }
-        });
-
-
         $("#submitGET").click(function () {
             var filename = $("#fileToUploadGET").val();
             if (filename !== "") {
@@ -191,35 +136,6 @@
             }
         });
 
-        $("#submitPUT").click(function () {
-            var filename = $("#fileToUploadPUT").val();
-            if (filename !== "") {
-                var leafname = filename.split('\\').pop().split('/').pop();
-                form.append(leafname, $("#fileToUploadPOST").prop('files')[0]);
-                var settings = {
-                    "url": window.location.href + "doc/" + leafname,
-                    "method": "POST",
-                    "timeout": 0,
-                    "processData": false,
-                    "mimeType": "multipart/form-data",
-                    "contentType": false,
-                    "data": form,
-                    "success": function (xml, textStatus, xhr) {
-                        console.log(xhr.status)
-                        alert("Success ! Code :"+  xhr.status);
-                    },
-                    "error": function(xhr, textStatus, errorThrown) {
-                        console.log(xhr.status)
-                        alert("Fail ! Code :"+  xhr.status);
-                    }
-                };
-
-                $.ajax(settings).done(function (response) {
-                        console.log(response);
-                    }
-                );
-            }
-        });
 
 
         $("#submitDELETE").click(function () {
