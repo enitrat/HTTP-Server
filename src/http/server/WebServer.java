@@ -40,6 +40,7 @@ public class WebServer {
         }
         try {
             int serverPort = Integer.parseInt(args[0]);
+            System.out.println("Working Directory = " + System.getProperty("user.dir"));
             if (serverPort < 1024 || serverPort > 65535) {
                 System.err.println("Error, the port must be an integer between 1024 and 65535");
                 System.exit(1);
