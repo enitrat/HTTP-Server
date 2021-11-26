@@ -9,6 +9,10 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
+/**
+ * Handles request sent to /HandleRequest.
+ * Acts like an ActionServlet.
+ */
 public class HandleRequest {
 
     private static final String AUTHORIZED_USER_DIRECTORY = "doc/users/";
