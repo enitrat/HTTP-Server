@@ -78,6 +78,10 @@ public class WebServer {
         }
     }
 
+    /**
+     * ClientHandler class implements Runnable be cause we want our
+     * server to be able to handle multiple clients simultaneously with multithreading.
+     */
     private static class ClientHandler implements Runnable {
         private final Socket client;
 
@@ -117,16 +121,16 @@ public class WebServer {
             String request = new String();
 
             //While we don't encounter an EOF or a CRLF, we add to the request string the parameters.
-            int bcur = '\0', bprec = '\0';
+            int currentByte = '\0', prevByte = '\0';
             boolean newline = false;
-            while ((bcur = in.read()) != -1 && !(newline && bprec == '\r' && bcur == '\n')) {
-                if (bprec == '\r' && bcur == '\n') {
+            while ((currentByte = in.read()) != -1 && !(newline && prevByte == '\r' && currentByte == '\n')) {
+                if (prevByte == '\r' && currentByte == '\n') {
                     newline = true;
-                } else if (!(bprec == '\n' && bcur == '\r')) {
+                } else if (!(prevByte == '\n' && currentByte == '\r')) {
                     newline = false;
                 }
-                bprec = bcur;
-                request += (char) bcur;
+                prevByte = currentByte;
+                request += (char) currentByte;
             }
 
             System.out.println("request: " + request);
@@ -135,6 +139,9 @@ public class WebServer {
                 return;
             }
 
+            /**
+             * Parse the request parameters
+             */
             String[] requestsLines = request.split("\r\n");
             String[] requestLine = requestsLines[0].split(" ");
 
