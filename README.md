@@ -2,7 +2,7 @@
 
 ## Lancement du serveur
 Lancer le serveur en exécutant le fichier .jar présent à la racine
-`java -jar HTTP-Server.jar`
+`java -jar HTTP-Server.jar <PORT_NUMBER>`
 
 ## Organisation des répertoires
 * src/  
