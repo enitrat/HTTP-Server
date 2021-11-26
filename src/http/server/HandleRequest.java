@@ -145,7 +145,7 @@ public class HandleRequest {
 
     /**
      * Realises an adder operation
-     * @param map
+     * @param map with the numbers to add
      * @return result of the operation
      */
     private String doAdder(Map<String, String> map) {
