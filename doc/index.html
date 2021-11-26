@@ -8,12 +8,19 @@
 <div style="display: flex; justify-content: center; flex-direction: column; margin: auto; width: fit-content;">
     <h1>Hey ! Welcome to our WebServer </h1>
 
-    <h2> CREATE AN USER WITH PUT</h2>
+    <h2> Dynamic Adder with get implementation </h2>
+    <div>
+        <form>
+            Enter First Number: <input type="text" name="first" id="first">
+            Enter Second Number: <input type="text" name="second" id="second">
+            <input type="button" id="adder" value="adder" name="adder">
+            Result is: <span name="answer" id="answer"></span>
+        </form>
+    </div>
+
+    <h2> CREATE AN USER WITH PUT BY CREATED A FILE</h2>
     <div>
         <form method="post">
-            <div>
-                <input type="hidden" id="type" value="user" name="type">
-            </div>
             <div>
                 <span> Name :</span><input type="text" name="name" id="name">
             </div>
@@ -28,6 +35,29 @@
             </div>
             <div>
                 <input type="button" id="submitUSER" value="createUSER" name="submitUSER">
+                <span> you will be able to acces data of the user by GET /doc/users/username.html</span>
+            </div>
+
+        </form>
+    </div>
+
+    <h2> CREATE AN USER WITH POST WITH DYNAMIC REQUEST</h2>
+    <div>
+        <form method="post">
+            <div>
+                <span> Name :</span><input type="text" name="name2" id="name2">
+            </div>
+            <div>
+                <span> Email :</span><input type="text" name="email2" id="email2">
+            </div>
+            <div>
+                <span> Phone :</span><input type="text" name="phone2" id="phone2">
+            </div>
+            <div>
+                <span> Password :</span><input type="password" name="password2" id="password2">
+            </div>
+            <div>
+                <input type="button" id="submitUSER2" value="createUSER2" name="submitUSER2">
                 <span> you will be able to acces data of the user by GET /doc/users/username.html</span>
             </div>
 
@@ -53,12 +83,9 @@
         </form>
     </div>
 
-    <h2> POST </h2>
+    <h2> POST/PUT</h2>
     <div>
-        <form method="post"> Select a file to POST:
-            <input type="file" name="fileToUploadPOST" id="fileToUploadPOST">
-            <input type="button" id="submitPOST" value="Upload file" name="submitPOST">
-        </form>
+        <p> Please, to post or put a file use postman </p>
     </div>
 
     <h2> GET </h2>
@@ -77,19 +104,19 @@
         </form>
     </div>
 
-    <h2> PUT </h2>
-    <div>
-        <form method="put"> Select a file to PUT:
-            <input type="file" name="fileToUploadPUT" id="fileToUploadPUT">
-            <input type="button" id="submitPUT" value="Put file" name="submitPUT">
-        </form>
-    </div>
-
-    <h2> HEAU </h2>
+    <h2> HEAD </h2>
     <div>
         <form method="head"> Select a file to get the HEAD:
             <input type="text" name="fileToUploadHEAD" id="fileToUploadHEAD">
             <input type="button" id="submitHEAD" value="Head of a file" name="submitHEAD">
+        </form>
+    </div>
+
+    <h2> OPTIONS </h2>
+    <div>
+        <form> Select a file to get options:
+            <input type="text" name="fileToUploadOPTIONS" id="fileToUploadOPTIONS">
+            <input type="button" id="submitOPTIONS" value="Head of a file" name="submitOPTIONS">
         </form>
     </div>
 </div>
@@ -98,7 +125,62 @@
 
     $(document).ready(function () {
 
-        console.log("ready");
+
+        $("#adder").click(function () {
+
+            var settings = {
+                "url": './HandleRequest',
+                "method": 'POST',
+                "data": {
+                    "request": 'Adder',
+                    "number1": $("#first").val(),
+                    "number2": $("#second").val(),
+
+                },
+                "success": function(data){
+                    console.log(data);
+                    document.getElementById("answer").textContent = data;
+                },
+                "error": function(xhr, textStatus, errorThrown) {
+                    console.log(xhr.status)
+                    alert("Fail ! Code :"+  xhr.status);
+                }
+            }
+            $.ajax(settings).done(function (xhr, textStatus) {
+                    console.log(xhr);
+                }
+            );
+        });
+
+
+       $("#submitUSER2").click(function () {
+
+
+            var settings = {
+                "url": './HandleRequest',
+                "method": 'POST',
+                "data": {
+                    "request": 'CreateUser',
+                    "user": $("#name2").val(),
+                    "phone": $("#phone2").val(),
+                    "mail": $("#email2").val(),
+                    "password": $("#password2").val()
+                },
+                "success": function(data){
+                    console.log(data);
+                    window.open(data);
+                },
+                "error": function(xhr, textStatus, errorThrown) {
+                    console.log(xhr.status)
+                    alert("Fail ! Code :"+  xhr.status);
+                }
+            }
+            $.ajax(settings).done(function (xhr, textStatus) {
+                    console.log(xhr);
+                }
+            );
+        });
+
 
         $("#submitUSER").click(function () {
             var filename = $("#name").val() + ".html";
@@ -106,9 +188,9 @@
             resultat += "<head> <title> Hello " + $("#name").val() + "</title> </head>";
             resultat += "<body>";
             resultat += "<h1>" + $("#name").val() + "</h1>";
-            resultat += "<div>" + $("#email").val() + "</div>";
-            resultat += "<div>" + $("#phone").val() + "</div>";
-            resultat += "<div>" + $("#password").val() + "</div>";
+            resultat += "<div> Email :" + $("#email").val() + "</div>";
+            resultat += "<div> Phone :" + $("#phone").val() + "</div>";
+            resultat += "<div> Password:" + $("#password").val() + "</div>";
             resultat += "</body></html>";
 
             var url = window.location.href + "doc/users/" + filename;
@@ -117,47 +199,21 @@
                 "method": "POST",
                 "contentType": "text/plain",
                 "data": resultat,
-                "success": function (response) {
-                    alert("Success!");
+                "success": function (xml, textStatus, xhr) {
+                    console.log(xhr.status)
+                    alert("Success ! Code :"+  xhr.status);
+                },
+                "error": function(xhr, textStatus, errorThrown) {
+                    console.log(xhr.status)
+                    alert("Fail ! Code :"+  xhr.status);
                 }
             };
 
-            $.ajax(settings).done(function (response) {
-                    console.log(response);
+            $.ajax(settings).done(function (xhr, textStatus) {
                     window.open(url);
                 }
             );
         });
-
-        $("#submitPOST").click(function () {
-            var filename = $("#fileToUploadPOST").val();
-            console.log("filename" + filename);
-            if (filename !== "") {
-                var leafname = filename.split('\\').pop().split('/').pop();
-                var form = new FormData();
-                form.append(leafname, $("#fileToUploadPOST").prop('files')[0]);
-                var settings = {
-                    "url": window.location.href + "doc/" + leafname,
-                    "method": "POST",
-                    "timeout": 0,
-                    "processData": false,
-                    "mimeType": "multipart/form-data",
-                    "contentType": false,
-                    "data": form,
-                    "success": function (response) {
-                        alert("Success!");
-                    }
-                };
-
-
-                $.ajax(settings).done(function (response) {
-                        console.log(response);
-                    }
-                );
-
-            }
-        });
-
 
         $("#submitGET").click(function () {
             var filename = $("#fileToUploadGET").val();
@@ -166,21 +222,22 @@
             }
         });
 
-        $("#submitPUT").click(function () {
-            var filename = $("#fileToUploadPUT").val();
+
+
+        $("#submitDELETE").click(function () {
+            var filename = $("#fileToUploadDELETE").val();
             if (filename !== "") {
-                var leafname = filename.split('\\').pop().split('/').pop();
-                form.append(leafname, $("#fileToUploadPOST").prop('files')[0]);
                 var settings = {
-                    "url": window.location.href + "doc/" + leafname,
-                    "method": "POST",
-                    "timeout": 0,
-                    "processData": false,
-                    "mimeType": "multipart/form-data",
-                    "contentType": false,
-                    "data": form,
-                    "success": function (response) {
-                        alert("Success!");
+                    "url": window.location.href + "doc/" + filename,
+                    "method": "DELETE",
+                    "success": function (xml, textStatus, xhr) {
+                        console.log(xhr.status)
+                        alert("Success ! Code :"+  xhr.status);
+
+                    },
+                    "error": function(xhr, textStatus, errorThrown) {
+                        console.log(xhr.status)
+                        alert("Fail ! Code :"+  xhr.status);
                     }
                 };
 
@@ -191,16 +248,21 @@
             }
         });
 
-
-        $("#submitDELETE").click(function () {
-            var filename = $("#fileToUploadDELETE").val();
+        $("#submitOPTIONS").click(function () {
+            var filename = $("#fileToUploadOPTIONS").val();
             if (filename !== "") {
                 var settings = {
                     "url": window.location.href + "doc/" + filename,
-                    "method": "DELETE",
-                    "success": function (response) {
-                        console.log(response);
-                        alert("Success!");
+                    "method": "OPTIONS",
+                    "success": function (xml, textStatus, xhr) {
+                        console.log(xhr.status)
+                        console.log(xhr.getResponseHeader("allow"))
+                        alert("Success ! Code :"+  xhr.status +"\n" +
+                            "Methods allowed :" + xhr.getResponseHeader("allow"));
+                    },
+                    "error": function(xhr, textStatus, errorThrown) {
+                        console.log(xhr.status)
+                        alert("Fail ! Code :"+  xhr.status);
                     }
                 };
 
@@ -217,6 +279,14 @@
                 var settings = {
                     "url": window.location.href + "doc/" + filename,
                     "method": "HEAD",
+                    "success": function (xml, textStatus, xhr) {
+                        console.log(xhr.getAllResponseHeaders())
+                        alert("Success ! Code :"+  xhr.status);
+                    },
+                    "error": function(xhr, textStatus, errorThrown) {
+                        console.log(xhr.status)
+                        alert("Fail ! Code :"+  xhr.status);
+                    }
                 };
 
                 $.ajax(settings).done(function (response) {
@@ -242,7 +312,7 @@
                 '"usefullink":' + '"' + $("#usefullink_movie").val() + '",' +
                 '"picture":' + '"' + $("#picture_movie").val() + '"' +
                 "}";
-            console.log(JSON.parse(json));
+
 
             var settings = {
                 "url": window.location.href + "doc/media/media.json",
@@ -251,9 +321,8 @@
             };
 
             $.ajax(settings).done(function (response) {
-                console.log(response);
                 response['movies'].push(JSON.parse(json))
-                console.log(response);
+
 
                 settings = {
                     "url": window.location.href + "doc/media/media.json",
@@ -263,9 +332,13 @@
                         "Content-Type": "application/json"
                     },
                     "data": JSON.stringify(response),
-                    "success": function (response) {
-                        console.log(response);
-                        alert("Success!");
+                    "success": function (xml, textStatus, xhr) {
+                        console.log(xhr.status)
+                        alert("Success ! Code :"+  xhr.status);
+                    },
+                    "error": function(xhr, textStatus, errorThrown) {
+                        console.log(xhr.status)
+                        alert("Fail ! Code :"+  xhr.status);
                     }
                 };
                 $.ajax(settings).done(function (response) {
