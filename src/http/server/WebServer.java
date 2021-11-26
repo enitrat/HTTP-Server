@@ -5,26 +5,17 @@ package http.server;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.Buffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
-
-import static javax.script.ScriptEngine.FILENAME;
 
 /**
- * Example program from Chapter 1 Programming Spiders, Bots and Aggregators in
- * Java Copyright 2001 by Jeff Heaton
- * <p>
- * WebServer is a very simple web-server. Any request is responded with a very
- * simple web-page.
- *
- * @author Jeff Heaton
- * @version 1.0
+ * Java Webserver implemented using Sockets.
+ * Handles most popular HTTP Request such as GET, POST, etc.
+ * Users can interact with the server by using a client such as postman
+ * or in the browser at localhost:{PORT_NUMBER}.
  */
 public class WebServer {
 
@@ -39,7 +30,7 @@ public class WebServer {
     /**
      * Start the application.
      *
-     * @param args Command line parameters are not used.
+     * @param args port to start the server on
      */
     public static void main(String[] args) {
 
@@ -47,8 +38,6 @@ public class WebServer {
             System.out.println("Usage: java EchoServer <EchoServer port>");
             System.exit(1);
         }
-
-
         try {
             int serverPort = Integer.parseInt(args[0]);
             if (serverPort < 1024 || serverPort > 65535) {
@@ -61,8 +50,6 @@ public class WebServer {
         } catch (NumberFormatException e) {
             System.err.println("Error, the port number must be an integer");
         }
-
-
     }
 
     /**
@@ -81,35 +68,34 @@ public class WebServer {
             System.out.println("Error: " + e);
             return;
         }
-
         System.out.println("Waiting for connection");
         for (; ; ) {
             try {
                 // wait for a connection
                 client = s.accept();
-
                 ClientHandler clientSock = new ClientHandler(client);
                 new Thread(clientSock).start();
             } catch (Exception e1) {
                 System.out.println("Error: " + e1);
                 e1.printStackTrace();
-
             }
         }
     }
 
     /**
-     * ClientHandler class implements Runnable be cause we want our
+     * ClientHandler class implements Runnable because we want our
      * server to be able to handle multiple clients simultaneously with multithreading.
      */
     private static class ClientHandler implements Runnable {
         private final Socket client;
-
         // Constructor
         public ClientHandler(Socket socket) {
             this.client = socket;
         }
 
+        /**
+         * Function to run when our thread is started.
+         */
         @Override
         public void run() {
             try {
@@ -130,16 +116,16 @@ public class WebServer {
         }
 
         /**
-         * Handles the client actions once there is a client connected
-         *
-         * @param client
+         * Handles the client actions once there is a client connected.
+         * Reads the request parameters and acts accordingly.
+         * @param client Socket currently connected.
          * @throws IOException
          */
         private void handleClient(Socket client) throws IOException {
             BufferedInputStream in = new BufferedInputStream(client.getInputStream());
             String request = new String();
 
-            //While we don't encounter an EOF or a CRLF, we add to the request string the parameters.
+            //Reads all request parameters until a CRLF sequence
             int currentByte = '\0', prevByte = '\0';
             boolean newline = false;
             while ((currentByte = in.read()) != -1 && !(newline && prevByte == '\r' && currentByte == '\n')) {
@@ -163,7 +149,6 @@ public class WebServer {
              */
             String[] requestsLines = request.split("\r\n");
             String[] requestLine = requestsLines[0].split(" ");
-
             String method = requestLine[0];
             String filename = requestLine[1].substring(1, requestLine[1].length());
             String version = requestLine[2];
@@ -192,11 +177,10 @@ public class WebServer {
 
                 if (filename.startsWith(HANDLE_REQUEST)) {
                     HandleRequest handleRequest = new HandleRequest();
-
                     if (method.equals("POST") && requestToHandle) {
                         handleRequest.doPOST(in, client);
-                    } else if (method.equals("GET")) {
-                        handleRequest.doGET(in, client);
+                    } else {
+                        sendHeader(client, "501 Not Implemented");
                     }
 
                 } else if (filename.isEmpty()) {
@@ -206,10 +190,6 @@ public class WebServer {
                         doHEAD(client, INDEX_PATH);
                     } else if (method.equals("OPTIONS")) {
                         doOPTIONS(client, INDEX_PATH);
-                    } else if (method.equals("PUT")) {
-                        doPUT(in, client, filename);
-                    } else if (method.equals("POST")) {
-                        doPOST(in, client, filename);
                     } else {
                         sendHeader(client, "403 Forbidden");
                     }
@@ -263,6 +243,13 @@ public class WebServer {
             }
         }
 
+        /**
+         * Given a client and a filename to access, returns to the client the headers
+         * that a GET request would return.
+         * @param client
+         * @param filename
+         * @throws IOException
+         */
         private void doHEAD(Socket client, String filename) throws IOException {
             File file = new File(filename);
             if (file.exists() && file.isFile()) {
@@ -333,6 +320,13 @@ public class WebServer {
             fOut.close();
         }
 
+        /**
+         * Implementation of the HTTP DELETE method according to the specifications listed on
+         * <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/DELETE">the mozilla developer docs</a>
+         * @param client
+         * @param filename
+         * @throws IOException
+         */
         private void doDELETE(Socket client, String filename) throws IOException {
             try {
                 File file = new File(filename);//Output stream will be in append mode if the file exists, otherwise in the beginning
@@ -353,15 +347,28 @@ public class WebServer {
             }
         }
 
+        /**
+         * Implementation of the HTTP DELETE method according to the specifications listed on
+         * <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/OPTIONS">the mozilla developer docs</a>
+         * @param client
+         * @param filename
+         * @throws IOException
+         */
         private void doOPTIONS(Socket client, String filename) throws IOException {
             File file = new File(filename);
             if (file.exists() && file.isFile()) {
-                sendContentOPTIONS(client, "200 OK", "OPTIONS, GET, HEAD, POST, PUT, DELETE");
+                sendHeader(client, "200 OK", "OPTIONS, GET, HEAD, POST, PUT, DELETE");
             } else {
                 sendHeader(client, "404 Not Found");
             }
         }
 
+        /**
+         * Sends a response with only a header and the response status
+         * @param client
+         * @param status
+         * @throws IOException
+         */
         private static void sendHeader(Socket client, String status) throws IOException {
             OutputStream clientOutput = client.getOutputStream();
             clientOutput.write(("HTTP/1.1 " + status + "\r\n").getBytes());
@@ -370,6 +377,14 @@ public class WebServer {
             clientOutput.close();
         }
 
+        /**
+         * Sends a header with the response status the content type and the content length for the HEAD request.
+         * @param client
+         * @param status
+         * @param contentType
+         * @param length
+         * @throws IOException
+         */
         private static void sendHeader(Socket client, String status, String contentType, long length) throws IOException {
             OutputStream clientOutput = client.getOutputStream();
             clientOutput.write(("HTTP/1.1 " + status + "\r\n").getBytes());
@@ -381,8 +396,7 @@ public class WebServer {
         }
 
         /**
-         * Sends the response to the client.
-         *
+         * Sends a response with a header and a body for the GET request
          * @param client
          * @param status
          * @param contentType
@@ -401,7 +415,14 @@ public class WebServer {
             clientOutput.close();
         }
 
-        private static void sendContentOPTIONS(Socket client, String status, String allows) throws IOException {
+        /**
+         * Sends a header with the allowed http requests for the OPTIONS request
+         * @param client
+         * @param status
+         * @param allows
+         * @throws IOException
+         */
+        private static void sendHeader(Socket client, String status, String allows) throws IOException {
             OutputStream clientOutput = client.getOutputStream();
             clientOutput.write(("HTTP/1.1 " + status + "\r\n").getBytes());
             clientOutput.write(("Allow: " + allows + "\r\n").getBytes());
@@ -411,6 +432,12 @@ public class WebServer {
             clientOutput.close();
         }
 
+        /**
+         *
+         * @param filePath path to the file
+         * @return content type of the file
+         * @throws IOException
+         */
         private static String guessContentType(Path filePath) throws IOException {
             return Files.probeContentType(filePath);
         }

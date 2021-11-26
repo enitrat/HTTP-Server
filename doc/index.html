@@ -8,7 +8,7 @@
 <div style="display: flex; justify-content: center; flex-direction: column; margin: auto; width: fit-content;">
     <h1>Hey ! Welcome to our WebServer </h1>
 
-    <h2> Dynamic Adder with get implementation </h2>
+    <h2> Dynamic Adder with /POST implementation </h2>
     <div>
         <form>
             Enter First Number: <input type="text" name="first" id="first">
@@ -18,7 +18,7 @@
         </form>
     </div>
 
-    <h2> CREATE AN USER WITH PUT BY CREATED A FILE</h2>
+    <h2> Create a user with a client-side generated HTML POST request</h2>
     <div>
         <form method="post">
             <div>
@@ -35,13 +35,13 @@
             </div>
             <div>
                 <input type="button" id="submitUSER" value="createUSER" name="submitUSER">
-                <span> you will be able to acces data of the user by GET /doc/users/username.html</span>
+                <span> you will be able to access data of the user with a GET /doc/users/username.html request </span>
             </div>
 
         </form>
     </div>
 
-    <h2> CREATE AN USER WITH POST WITH DYNAMIC REQUEST</h2>
+    <h2> Create a user with a server-side generated HTML POST request</h2>
     <div>
         <form method="post">
             <div>
@@ -58,7 +58,7 @@
             </div>
             <div>
                 <input type="button" id="submitUSER2" value="createUSER2" name="submitUSER2">
-                <span> you will be able to acces data of the user by GET /doc/users/username.html</span>
+                <span> you will be able to access data of the user with a GET /doc/users/username.html request</span>
             </div>
 
         </form>
@@ -85,7 +85,7 @@
 
     <h2> POST/PUT</h2>
     <div>
-        <p> Please, to post or put a file use postman </p>
+        <p> Please use POSTMAN to try these methods with binary files </p>
     </div>
 
     <h2> GET </h2>
@@ -127,6 +127,8 @@
 
 
         $("#adder").click(function () {
+            console.log("number1 : "+ $("#first").val(),
+                "number2 : "+ $("#second").val());
 
             var settings = {
                 "url": './HandleRequest',
@@ -143,7 +145,7 @@
                 },
                 "error": function(xhr, textStatus, errorThrown) {
                     console.log(xhr.status)
-                    alert("Fail ! Code :"+  xhr.status);
+                    alert("Request failed with error code :"+  xhr.status);
                 }
             }
             $.ajax(settings).done(function (xhr, textStatus) {
@@ -172,7 +174,7 @@
                 },
                 "error": function(xhr, textStatus, errorThrown) {
                     console.log(xhr.status)
-                    alert("Fail ! Code :"+  xhr.status);
+                    alert("Request failed with error code :"+  xhr.status);
                 }
             }
             $.ajax(settings).done(function (xhr, textStatus) {
@@ -205,7 +207,7 @@
                 },
                 "error": function(xhr, textStatus, errorThrown) {
                     console.log(xhr.status)
-                    alert("Fail ! Code :"+  xhr.status);
+                    alert("Request failed with error code :"+  xhr.status);
                 }
             };
 
@@ -237,7 +239,7 @@
                     },
                     "error": function(xhr, textStatus, errorThrown) {
                         console.log(xhr.status)
-                        alert("Fail ! Code :"+  xhr.status);
+                        alert("Request failed with error code :"+  xhr.status);
                     }
                 };
 
@@ -262,7 +264,7 @@
                     },
                     "error": function(xhr, textStatus, errorThrown) {
                         console.log(xhr.status)
-                        alert("Fail ! Code :"+  xhr.status);
+                        alert("Request failed with error code :"+  xhr.status);
                     }
                 };
 
@@ -285,7 +287,7 @@
                     },
                     "error": function(xhr, textStatus, errorThrown) {
                         console.log(xhr.status)
-                        alert("Fail ! Code :"+  xhr.status);
+                        alert("Request failed with error code :"+  xhr.status);
                     }
                 };
 
@@ -338,7 +340,7 @@
                     },
                     "error": function(xhr, textStatus, errorThrown) {
                         console.log(xhr.status)
-                        alert("Fail ! Code :"+  xhr.status);
+                        alert("Request failed with error code :"+  xhr.status);
                     }
                 };
                 $.ajax(settings).done(function (response) {
