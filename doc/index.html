@@ -8,12 +8,19 @@
 <div style="display: flex; justify-content: center; flex-direction: column; margin: auto; width: fit-content;">
     <h1>Hey ! Welcome to our WebServer </h1>
 
-    <h2> CREATE AN USER WITH PUT</h2>
+    <h2> Dynamic Adder with get implementation </h2>
+    <div>
+        <form>
+            Enter First Number: <input type="text" name="first" id="first">
+            Enter Second Number: <input type="text" name="second" id="second">
+            <input type="button" id="adder" value="adder" name="adder">
+            Result is: <span name="answer" id="answer"></span>
+        </form>
+    </div>
+
+    <h2> CREATE AN USER WITH PUT BY CREATED A FILE</h2>
     <div>
         <form method="post">
-            <div>
-                <input type="hidden" id="type" value="user" name="type">
-            </div>
             <div>
                 <span> Name :</span><input type="text" name="name" id="name">
             </div>
@@ -28,6 +35,29 @@
             </div>
             <div>
                 <input type="button" id="submitUSER" value="createUSER" name="submitUSER">
+                <span> you will be able to acces data of the user by GET /doc/users/username.html</span>
+            </div>
+
+        </form>
+    </div>
+
+    <h2> CREATE AN USER WITH POST WITH DYNAMIC REQUEST</h2>
+    <div>
+        <form method="post">
+            <div>
+                <span> Name :</span><input type="text" name="name2" id="name2">
+            </div>
+            <div>
+                <span> Email :</span><input type="text" name="email2" id="email2">
+            </div>
+            <div>
+                <span> Phone :</span><input type="text" name="phone2" id="phone2">
+            </div>
+            <div>
+                <span> Password :</span><input type="password" name="password2" id="password2">
+            </div>
+            <div>
+                <input type="button" id="submitUSER2" value="createUSER2" name="submitUSER2">
                 <span> you will be able to acces data of the user by GET /doc/users/username.html</span>
             </div>
 
@@ -96,6 +126,62 @@
     $(document).ready(function () {
 
 
+        $("#adder").click(function () {
+
+            var settings = {
+                "url": './HandleRequest',
+                "method": 'POST',
+                "data": {
+                    "request": 'Adder',
+                    "number1": $("#first").val(),
+                    "number2": $("#second").val(),
+
+                },
+                "success": function(data){
+                    console.log(data);
+                    document.getElementById("answer").textContent = data;
+                },
+                "error": function(xhr, textStatus, errorThrown) {
+                    console.log(xhr.status)
+                    alert("Fail ! Code :"+  xhr.status);
+                }
+            }
+            $.ajax(settings).done(function (xhr, textStatus) {
+                    console.log(xhr);
+                }
+            );
+        });
+
+
+       $("#submitUSER2").click(function () {
+
+
+            var settings = {
+                "url": './HandleRequest',
+                "method": 'POST',
+                "data": {
+                    "request": 'CreateUser',
+                    "user": $("#name2").val(),
+                    "phone": $("#phone2").val(),
+                    "mail": $("#email2").val(),
+                    "password": $("#password2").val()
+                },
+                "success": function(data){
+                    console.log(data);
+                    window.open(data);
+                },
+                "error": function(xhr, textStatus, errorThrown) {
+                    console.log(xhr.status)
+                    alert("Fail ! Code :"+  xhr.status);
+                }
+            }
+            $.ajax(settings).done(function (xhr, textStatus) {
+                    console.log(xhr);
+                }
+            );
+        });
+
+
         $("#submitUSER").click(function () {
             var filename = $("#name").val() + ".html";
             let resultat = "<!DOCTYPE html> <html>";
@@ -136,7 +222,7 @@
             }
         });
 
-_
+
 
         $("#submitDELETE").click(function () {
             var filename = $("#fileToUploadDELETE").val();
@@ -147,6 +233,7 @@ _
                     "success": function (xml, textStatus, xhr) {
                         console.log(xhr.status)
                         alert("Success ! Code :"+  xhr.status);
+
                     },
                     "error": function(xhr, textStatus, errorThrown) {
                         console.log(xhr.status)
@@ -193,7 +280,7 @@ _
                     "url": window.location.href + "doc/" + filename,
                     "method": "HEAD",
                     "success": function (xml, textStatus, xhr) {
-                        console.log(xhr.status)
+                        console.log(xhr.getAllResponseHeaders())
                         alert("Success ! Code :"+  xhr.status);
                     },
                     "error": function(xhr, textStatus, errorThrown) {

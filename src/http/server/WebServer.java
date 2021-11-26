@@ -28,25 +28,25 @@ import static javax.script.ScriptEngine.FILENAME;
  */
 public class WebServer {
 
-    public static final int PORT = 8080;
+
     private static final String AUTHORIZED_DIRECTORY = "doc";
-    private static final String AUTHORIZED_USER_DIRECTORY = "doc/users/";
     private static final String INDEX_PATH = "doc/index.html";
     private static final String ERROR_PATH = "doc/404.html";
+    private static final String HANDLE_REQUEST = "HandleRequest";
 
 
     /**
      * WebServer constructor.
      */
-    protected void start() {
+    protected void start(int port) {
         ServerSocket s;
         Socket client = null;
 
-        System.out.println("Webserver starting up on port " + PORT);
+        System.out.println("Webserver starting up on port " + port);
         System.out.println("(press ctrl-c to exit)");
         try {
             // create the main server socket
-            s = new ServerSocket(PORT);
+            s = new ServerSocket(port);
         } catch (Exception e) {
             System.out.println("Error: " + e);
             return;
@@ -112,12 +112,13 @@ public class WebServer {
         String version = requestLine[2];
         String host = requestsLines[1].split(" ")[1];
 
+        boolean requestToHandle = false;
+
         List<String> headers = new ArrayList<>();
         for (int h = 2; h < requestsLines.length - 1; h++) {
             String header = requestsLines[h];
-            if(requestsLines[h].startsWith("Content-Type: multipart/form-data")){
-                sendHeader(client, "501 Not Implemented");
-                return;
+            if(requestsLines[h].startsWith("Content-Type: application/x-www-form-urlencoded")){
+                requestToHandle = true;
             }
             headers.add(header);
         }
@@ -132,7 +133,16 @@ public class WebServer {
                 return;
             }
 
-            if (filename.isEmpty()){
+            if(filename.startsWith(HANDLE_REQUEST)){
+                HandleRequest handleRequest = new HandleRequest();
+
+                if(method.equals("POST") && requestToHandle){
+                    handleRequest.doPOST(in, client);
+                } else if(method.equals("GET")){
+                    handleRequest.doGET(in, client);
+                }
+
+            } else if (filename.isEmpty()){
                 if (method.equals("GET")) {
                     doGET(client, INDEX_PATH);
                 } else if (method.equals("HEAD")) {
@@ -170,6 +180,7 @@ public class WebServer {
             }
         } catch (Exception e) {
             try {
+                e.printStackTrace();
                 sendHeader(client, "500 Internal Server Error");
             } catch (Exception e2) {
             }
@@ -351,7 +362,27 @@ public class WebServer {
      * @param args Command line parameters are not used.
      */
     public static void main(String[] args) {
-        WebServer ws = new WebServer();
-        ws.start();
+
+        if (args.length != 1) {
+            System.out.println("Usage: java EchoServer <EchoServer port>");
+            System.exit(1);
+        }
+
+
+
+        try {
+            int serverPort = Integer.parseInt(args[0]);
+            if(serverPort < 1024 || serverPort> 65535){
+                System.err.println("Error, the port must be an integer between 1024 and 65535");
+                System.exit(1);
+            }
+
+            WebServer ws = new WebServer();
+            ws.start(serverPort);
+        } catch (NumberFormatException e) {
+            System.err.println("Error, the port number must be an integer");
+        }
+
+
     }
 }
