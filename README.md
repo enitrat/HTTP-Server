@@ -10,5 +10,3 @@ fichiers .java
 fichiers .class
 * doc/  
 Javadoc API et fichiers HTML
-* lib/  
-fichiers .jar
