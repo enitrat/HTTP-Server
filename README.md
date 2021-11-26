@@ -1,5 +1,7 @@
 # HTTP-Server
 
+Java SDK : Java 11
+
 ## Lancement du serveur
 Lancer le serveur en exécutant le fichier .jar présent à la racine
 `java -jar HTTP-Server.jar <PORT_NUMBER>`
