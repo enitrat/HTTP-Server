@@ -1,7 +1,8 @@
 # HTTP-Server
 
 ## Lancement du serveur
-Lancer le serveur (fichier WebServer.java) en spécifiant le port en argument
+Lancer le serveur en exécutant le fichier .jar présent à la racine
+`java -jar HTTP-Server.jar`
 
 ## Organisation des répertoires
 * src/  
